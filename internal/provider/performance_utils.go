@@ -9,32 +9,32 @@ import (
 	"github.com/sriniously/terraform-provider-sevalla/internal/sevallaapi"
 )
 
-// CacheEntry represents a cached API response
+// CacheEntry represents a cached API response.
 type CacheEntry struct {
 	Data      interface{}
 	Timestamp time.Time
 	TTL       time.Duration
 }
 
-// IsExpired checks if the cache entry is expired
+// IsExpired checks if the cache entry is expired.
 func (c *CacheEntry) IsExpired() bool {
 	return time.Since(c.Timestamp) > c.TTL
 }
 
-// ProviderCache provides caching for API responses to reduce API calls
+// ProviderCache provides caching for API responses to reduce API calls.
 type ProviderCache struct {
 	cache map[string]*CacheEntry
 	mutex sync.RWMutex
 }
 
-// NewProviderCache creates a new provider cache
+// NewProviderCache creates a new provider cache.
 func NewProviderCache() *ProviderCache {
 	return &ProviderCache{
 		cache: make(map[string]*CacheEntry),
 	}
 }
 
-// Get retrieves an item from the cache
+// Get retrieves an item from the cache.
 func (pc *ProviderCache) Get(key string) (interface{}, bool) {
 	pc.mutex.RLock()
 	defer pc.mutex.RUnlock()
@@ -47,7 +47,7 @@ func (pc *ProviderCache) Get(key string) (interface{}, bool) {
 	return entry.Data, true
 }
 
-// Set stores an item in the cache
+// Set stores an item in the cache.
 func (pc *ProviderCache) Set(key string, data interface{}, ttl time.Duration) {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
@@ -59,7 +59,7 @@ func (pc *ProviderCache) Set(key string, data interface{}, ttl time.Duration) {
 	}
 }
 
-// Clear removes all items from the cache
+// Clear removes all items from the cache.
 func (pc *ProviderCache) Clear() {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
@@ -67,7 +67,7 @@ func (pc *ProviderCache) Clear() {
 	pc.cache = make(map[string]*CacheEntry)
 }
 
-// ClearExpired removes all expired entries from the cache
+// ClearExpired removes all expired entries from the cache.
 func (pc *ProviderCache) ClearExpired() {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
@@ -79,7 +79,7 @@ func (pc *ProviderCache) ClearExpired() {
 	}
 }
 
-// BatchOperation represents a batch operation for API calls
+// BatchOperation represents a batch operation for API calls.
 type BatchOperation struct {
 	ID         string
 	Operation  string
@@ -89,7 +89,7 @@ type BatchOperation struct {
 	Done       chan bool
 }
 
-// BatchProcessor handles batch operations to reduce API calls
+// BatchProcessor handles batch operations to reduce API calls.
 type BatchProcessor struct {
 	operations chan *BatchOperation
 	results    map[string]*BatchOperation
@@ -98,7 +98,7 @@ type BatchProcessor struct {
 	batchTime  time.Duration
 }
 
-// NewBatchProcessor creates a new batch processor
+// NewBatchProcessor creates a new batch processor.
 func NewBatchProcessor(batchSize int, batchTime time.Duration) *BatchProcessor {
 	bp := &BatchProcessor{
 		operations: make(chan *BatchOperation, batchSize*2),
@@ -113,7 +113,7 @@ func NewBatchProcessor(batchSize int, batchTime time.Duration) *BatchProcessor {
 	return bp
 }
 
-// Submit submits an operation to the batch processor
+// Submit submits an operation to the batch processor.
 func (bp *BatchProcessor) Submit(op *BatchOperation) {
 	bp.mutex.Lock()
 	bp.results[op.ID] = op
@@ -122,7 +122,7 @@ func (bp *BatchProcessor) Submit(op *BatchOperation) {
 	bp.operations <- op
 }
 
-// Wait waits for an operation to complete
+// Wait waits for an operation to complete.
 func (bp *BatchProcessor) Wait(id string) (*BatchOperation, error) {
 	bp.mutex.RLock()
 	op, exists := bp.results[id]
@@ -136,7 +136,7 @@ func (bp *BatchProcessor) Wait(id string) (*BatchOperation, error) {
 	return op, op.Error
 }
 
-// processBatches processes operations in batches
+// processBatches processes operations in batches.
 func (bp *BatchProcessor) processBatches() {
 	ticker := time.NewTicker(bp.batchTime)
 	defer ticker.Stop()
@@ -162,7 +162,7 @@ func (bp *BatchProcessor) processBatches() {
 	}
 }
 
-// executeBatch executes a batch of operations
+// executeBatch executes a batch of operations.
 func (bp *BatchProcessor) executeBatch(batch []*BatchOperation) {
 	// Group operations by type for more efficient processing
 	operationGroups := make(map[string][]*BatchOperation)
@@ -193,7 +193,7 @@ func (bp *BatchProcessor) executeBatch(batch []*BatchOperation) {
 	}
 }
 
-// executeGetApplicationBatch executes a batch of get application operations
+// executeGetApplicationBatch executes a batch of get application operations.
 func (bp *BatchProcessor) executeGetApplicationBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	// For now, we'll execute individually but could be optimized
@@ -202,7 +202,7 @@ func (bp *BatchProcessor) executeGetApplicationBatch(ops []*BatchOperation) {
 	}
 }
 
-// executeGetDatabaseBatch executes a batch of get database operations
+// executeGetDatabaseBatch executes a batch of get database operations.
 func (bp *BatchProcessor) executeGetDatabaseBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	for _, op := range ops {
@@ -210,7 +210,7 @@ func (bp *BatchProcessor) executeGetDatabaseBatch(ops []*BatchOperation) {
 	}
 }
 
-// executeGetStaticSiteBatch executes a batch of get static site operations
+// executeGetStaticSiteBatch executes a batch of get static site operations.
 func (bp *BatchProcessor) executeGetStaticSiteBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	for _, op := range ops {
@@ -218,7 +218,7 @@ func (bp *BatchProcessor) executeGetStaticSiteBatch(ops []*BatchOperation) {
 	}
 }
 
-// executeGetObjectStorageBatch executes a batch of get object storage operations
+// executeGetObjectStorageBatch executes a batch of get object storage operations.
 func (bp *BatchProcessor) executeGetObjectStorageBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	for _, op := range ops {
@@ -226,7 +226,7 @@ func (bp *BatchProcessor) executeGetObjectStorageBatch(ops []*BatchOperation) {
 	}
 }
 
-// executeGetPipelineBatch executes a batch of get pipeline operations
+// executeGetPipelineBatch executes a batch of get pipeline operations.
 func (bp *BatchProcessor) executeGetPipelineBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	for _, op := range ops {
@@ -234,14 +234,14 @@ func (bp *BatchProcessor) executeGetPipelineBatch(ops []*BatchOperation) {
 	}
 }
 
-// executeIndividualOperation executes a single operation
+// executeIndividualOperation executes a single operation.
 func (bp *BatchProcessor) executeIndividualOperation(op *BatchOperation) {
 	// This would contain the actual API call logic
 	// For now, we'll just mark it as done
 	close(op.Done)
 }
 
-// RateLimiter implements rate limiting for API calls
+// RateLimiter implements rate limiting for API calls.
 type RateLimiter struct {
 	tokens    chan struct{}
 	ticker    *time.Ticker
@@ -249,7 +249,7 @@ type RateLimiter struct {
 	interval  time.Duration
 }
 
-// NewRateLimiter creates a new rate limiter
+// NewRateLimiter creates a new rate limiter.
 func NewRateLimiter(rateLimit int, interval time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		tokens:    make(chan struct{}, rateLimit),
@@ -269,7 +269,7 @@ func NewRateLimiter(rateLimit int, interval time.Duration) *RateLimiter {
 	return rl
 }
 
-// Wait waits for a token to be available
+// Wait waits for a token to be available.
 func (rl *RateLimiter) Wait(ctx context.Context) error {
 	select {
 	case <-rl.tokens:
@@ -279,7 +279,7 @@ func (rl *RateLimiter) Wait(ctx context.Context) error {
 	}
 }
 
-// refillTokens refills the token bucket at the specified interval
+// refillTokens refills the token bucket at the specified interval.
 func (rl *RateLimiter) refillTokens() {
 	for range rl.ticker.C {
 		select {
@@ -290,12 +290,12 @@ func (rl *RateLimiter) refillTokens() {
 	}
 }
 
-// Stop stops the rate limiter
+// Stop stops the rate limiter.
 func (rl *RateLimiter) Stop() {
 	rl.ticker.Stop()
 }
 
-// PerformanceOptimizedClient wraps the Sevalla API client with performance optimizations
+// PerformanceOptimizedClient wraps the Sevalla API client with performance optimizations.
 type PerformanceOptimizedClient struct {
 	client        *sevallaapi.Client
 	cache         *ProviderCache
@@ -303,7 +303,7 @@ type PerformanceOptimizedClient struct {
 	rateLimiter   *RateLimiter
 }
 
-// NewPerformanceOptimizedClient creates a new performance optimized client
+// NewPerformanceOptimizedClient creates a new performance optimized client.
 func NewPerformanceOptimizedClient(client *sevallaapi.Client) *PerformanceOptimizedClient {
 	return &PerformanceOptimizedClient{
 		client:        client,
@@ -313,14 +313,16 @@ func NewPerformanceOptimizedClient(client *sevallaapi.Client) *PerformanceOptimi
 	}
 }
 
-// GetApplicationCached gets an application with caching
+// GetApplicationCached gets an application with caching.
 func (poc *PerformanceOptimizedClient) GetApplicationCached(ctx context.Context, id string) (*sevallaapi.Application, error) {
 	cacheKey := "application:" + id
 	
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Application retrieved from cache", map[string]interface{}{"id": id})
-		return cached.(*sevallaapi.Application), nil
+		if app, ok := cached.(*sevallaapi.Application); ok {
+			return app, nil
+		}
 	}
 	
 	// Wait for rate limiter
@@ -341,14 +343,16 @@ func (poc *PerformanceOptimizedClient) GetApplicationCached(ctx context.Context,
 	return app, nil
 }
 
-// GetDatabaseCached gets a database with caching
+// GetDatabaseCached gets a database with caching.
 func (poc *PerformanceOptimizedClient) GetDatabaseCached(ctx context.Context, id string) (*sevallaapi.Database, error) {
 	cacheKey := "database:" + id
 	
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Database retrieved from cache", map[string]interface{}{"id": id})
-		return cached.(*sevallaapi.Database), nil
+		if db, ok := cached.(*sevallaapi.Database); ok {
+			return db, nil
+		}
 	}
 	
 	// Wait for rate limiter
@@ -369,14 +373,16 @@ func (poc *PerformanceOptimizedClient) GetDatabaseCached(ctx context.Context, id
 	return db, nil
 }
 
-// GetStaticSiteCached gets a static site with caching
+// GetStaticSiteCached gets a static site with caching.
 func (poc *PerformanceOptimizedClient) GetStaticSiteCached(ctx context.Context, id string) (*sevallaapi.StaticSite, error) {
 	cacheKey := "static_site:" + id
 	
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Static site retrieved from cache", map[string]interface{}{"id": id})
-		return cached.(*sevallaapi.StaticSite), nil
+		if site, ok := cached.(*sevallaapi.StaticSite); ok {
+			return site, nil
+		}
 	}
 	
 	// Wait for rate limiter
@@ -397,14 +403,16 @@ func (poc *PerformanceOptimizedClient) GetStaticSiteCached(ctx context.Context, 
 	return site, nil
 }
 
-// GetObjectStorageCached gets object storage with caching
+// GetObjectStorageCached gets object storage with caching.
 func (poc *PerformanceOptimizedClient) GetObjectStorageCached(ctx context.Context, id string) (*sevallaapi.ObjectStorage, error) {
 	cacheKey := "object_storage:" + id
 	
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Object storage retrieved from cache", map[string]interface{}{"id": id})
-		return cached.(*sevallaapi.ObjectStorage), nil
+		if storage, ok := cached.(*sevallaapi.ObjectStorage); ok {
+			return storage, nil
+		}
 	}
 	
 	// Wait for rate limiter
@@ -425,14 +433,16 @@ func (poc *PerformanceOptimizedClient) GetObjectStorageCached(ctx context.Contex
 	return storage, nil
 }
 
-// GetPipelineCached gets a pipeline with caching
+// GetPipelineCached gets a pipeline with caching.
 func (poc *PerformanceOptimizedClient) GetPipelineCached(ctx context.Context, id string) (*sevallaapi.Pipeline, error) {
 	cacheKey := "pipeline:" + id
 	
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Pipeline retrieved from cache", map[string]interface{}{"id": id})
-		return cached.(*sevallaapi.Pipeline), nil
+		if pipeline, ok := cached.(*sevallaapi.Pipeline); ok {
+			return pipeline, nil
+		}
 	}
 	
 	// Wait for rate limiter
@@ -453,7 +463,7 @@ func (poc *PerformanceOptimizedClient) GetPipelineCached(ctx context.Context, id
 	return pipeline, nil
 }
 
-// InvalidateCache invalidates cache entries for a specific resource type
+// InvalidateCache invalidates cache entries for a specific resource type.
 func (poc *PerformanceOptimizedClient) InvalidateCache(resourceType, id string) {
 	cacheKey := resourceType + ":" + id
 	poc.cache.mutex.Lock()
@@ -462,12 +472,12 @@ func (poc *PerformanceOptimizedClient) InvalidateCache(resourceType, id string) 
 	delete(poc.cache.cache, cacheKey)
 }
 
-// ClearCache clears all cache entries
+// ClearCache clears all cache entries.
 func (poc *PerformanceOptimizedClient) ClearCache() {
 	poc.cache.Clear()
 }
 
-// Stop stops all performance optimization components
+// Stop stops all performance optimization components.
 func (poc *PerformanceOptimizedClient) Stop() {
 	poc.rateLimiter.Stop()
 	poc.cache.Clear()

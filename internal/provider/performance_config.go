@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// PerformanceConfig holds configuration for performance optimizations
+// PerformanceConfig holds configuration for performance optimizations.
 type PerformanceConfig struct {
 	// Caching configuration
 	CacheEnabled     bool
@@ -34,7 +34,7 @@ type PerformanceConfig struct {
 	RetryDelay       time.Duration
 }
 
-// DefaultPerformanceConfig returns default performance configuration
+// DefaultPerformanceConfig returns default performance configuration.
 func DefaultPerformanceConfig() *PerformanceConfig {
 	return &PerformanceConfig{
 		// Caching defaults
@@ -64,11 +64,21 @@ func DefaultPerformanceConfig() *PerformanceConfig {
 	}
 }
 
-// LoadPerformanceConfigFromEnv loads performance configuration from environment variables
+// LoadPerformanceConfigFromEnv loads performance configuration from environment variables.
 func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 	config := DefaultPerformanceConfig()
 	
-	// Cache configuration
+	loadCacheConfig(config)
+	loadRateLimitConfig(config)
+	loadBatchConfig(config)
+	loadConnectionConfig(config)
+	loadRequestConfig(config)
+	
+	return config
+}
+
+// loadCacheConfig loads cache configuration from environment variables.
+func loadCacheConfig(config *PerformanceConfig) {
 	if val := os.Getenv("SEVALLA_CACHE_ENABLED"); val != "" {
 		if enabled, err := strconv.ParseBool(val); err == nil {
 			config.CacheEnabled = enabled
@@ -80,8 +90,10 @@ func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 			config.CacheTTL = ttl
 		}
 	}
-	
-	// Rate limiting configuration
+}
+
+// loadRateLimitConfig loads rate limiting configuration from environment variables.
+func loadRateLimitConfig(config *PerformanceConfig) {
 	if val := os.Getenv("SEVALLA_RATE_LIMIT_ENABLED"); val != "" {
 		if enabled, err := strconv.ParseBool(val); err == nil {
 			config.RateLimitEnabled = enabled
@@ -99,8 +111,10 @@ func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 			config.RateLimitBurst = burst
 		}
 	}
-	
-	// Batch processing configuration
+}
+
+// loadBatchConfig loads batch processing configuration from environment variables.
+func loadBatchConfig(config *PerformanceConfig) {
 	if val := os.Getenv("SEVALLA_BATCH_ENABLED"); val != "" {
 		if enabled, err := strconv.ParseBool(val); err == nil {
 			config.BatchEnabled = enabled
@@ -118,8 +132,10 @@ func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 			config.BatchTimeout = timeout
 		}
 	}
-	
-	// Connection pooling configuration
+}
+
+// loadConnectionConfig loads connection pooling configuration from environment variables.
+func loadConnectionConfig(config *PerformanceConfig) {
 	if val := os.Getenv("SEVALLA_MAX_IDLE_CONNS"); val != "" {
 		if conns, err := strconv.Atoi(val); err == nil {
 			config.MaxIdleConns = conns
@@ -143,8 +159,10 @@ func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 			config.ConnMaxIdleTime = idleTime
 		}
 	}
-	
-	// Request timeout configuration
+}
+
+// loadRequestConfig loads request timeout configuration from environment variables.
+func loadRequestConfig(config *PerformanceConfig) {
 	if val := os.Getenv("SEVALLA_REQUEST_TIMEOUT"); val != "" {
 		if timeout, err := time.ParseDuration(val); err == nil {
 			config.RequestTimeout = timeout
@@ -162,11 +180,9 @@ func LoadPerformanceConfigFromEnv() *PerformanceConfig {
 			config.RetryDelay = delay
 		}
 	}
-	
-	return config
 }
 
-// Validate validates the performance configuration
+// Validate validates the performance configuration.
 func (pc *PerformanceConfig) Validate() error {
 	if pc.RateLimitPerSecond <= 0 {
 		pc.RateLimitPerSecond = 10

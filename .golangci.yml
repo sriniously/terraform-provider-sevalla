@@ -7,56 +7,60 @@ run:
   go: "1.24"
 
 output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  formats:
+    text:
+      print-issued-lines: true
+      print-linter-name: true
+      colors: true
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - forcetypeassert
-        - goconst
-        - mnd
-        - lll
-        - noctx
-        - gocritic
-        - godot
-        - unused
-        - cyclop
 
 linters:
-  disable-all: true
+  default: none
   enable:
-    - durationcheck
-    - errcheck
-    - copyloopvar
-    - forcetypeassert
-    - godot
-    - ineffassign
-    - makezero
-    - misspell
-    - nilerr
-    - predeclared
-    - staticcheck
-    - unconvert
-    - unparam
-    - unused
-    - govet
-    - cyclop
-    - dupl
+  - durationcheck
+  - errcheck
+  - copyloopvar
+  - forcetypeassert
+  - godot
+  - ineffassign
+  - makezero
+  - misspell
+  - nilerr
+  - predeclared
+  - staticcheck
+  - unconvert
+  - unparam
+  - unused
+  - govet
+  - cyclop
+  - dupl
 
-linters-settings:
-  gocritic:
-    disabled-checks:
+  settings:
+    gocritic:
+      disabled-checks:
       - hugeParam
-  cyclop:
-    max-complexity: 20
-  dupl:
-    threshold: 150
-  godot:
-    exclude:
+    cyclop:
+      max-complexity: 20
+    dupl:
+      threshold: 150
+    godot:
+      exclude:
       - "^// Test.*"
       - "^// testAcc.*"
+
+  exclusions:
+    rules:
+    - path: _test\.go
+      linters:
+      - forcetypeassert
+      - goconst
+      - mnd
+      - lll
+      - noctx
+      - gocritic
+      - godot
+      - unused
+      - cyclop
