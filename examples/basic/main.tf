@@ -14,21 +14,21 @@ provider "sevalla" {
 resource "sevalla_application" "example" {
   name        = "example-app"
   description = "Example application"
-  
+
   repository {
     url  = "https://github.com/user/example-app"
     type = "github"
   }
-  
+
   branch        = "main"
   build_command = "npm run build"
   start_command = "npm start"
-  
+
   environment = {
     NODE_ENV = "production"
     PORT     = "3000"
   }
-  
+
   instances = 1
   memory    = 512
   cpu       = 250

@@ -51,63 +51,63 @@ resource "sevalla_object_storage" "assets" {
 resource "sevalla_application" "api" {
   name        = "${var.app_name}-api"
   description = "Backend API for ${var.app_name}"
-  
+
   repository {
     url    = var.api_repo_url
     type   = "github"
     branch = var.api_branch
   }
-  
+
   branch        = var.api_branch
   build_command = "npm ci && npm run build"
   start_command = "npm start"
-  
+
   environment = {
-    NODE_ENV     = "production"
-    PORT         = "3000"
-    
+    NODE_ENV = "production"
+    PORT     = "3000"
+
     # Database connection
     DATABASE_URL = "postgresql://${sevalla_database.main_db.username}:${var.db_password}@${sevalla_database.main_db.host}:${sevalla_database.main_db.port}/${sevalla_database.main_db.name}"
-    
+
     # Redis connection
     REDIS_URL = "redis://${sevalla_database.cache.host}:${sevalla_database.cache.port}"
-    
+
     # Object storage configuration
-    UPLOADS_BUCKET_ENDPOINT   = sevalla_object_storage.uploads.endpoint
-    UPLOADS_ACCESS_KEY        = sevalla_object_storage.uploads.access_key
-    UPLOADS_SECRET_KEY        = sevalla_object_storage.uploads.secret_key
-    
-    ASSETS_BUCKET_ENDPOINT    = sevalla_object_storage.assets.endpoint
-    ASSETS_ACCESS_KEY         = sevalla_object_storage.assets.access_key
-    ASSETS_SECRET_KEY         = sevalla_object_storage.assets.secret_key
-    
+    UPLOADS_BUCKET_ENDPOINT = sevalla_object_storage.uploads.endpoint
+    UPLOADS_ACCESS_KEY      = sevalla_object_storage.uploads.access_key
+    UPLOADS_SECRET_KEY      = sevalla_object_storage.uploads.secret_key
+
+    ASSETS_BUCKET_ENDPOINT = sevalla_object_storage.assets.endpoint
+    ASSETS_ACCESS_KEY      = sevalla_object_storage.assets.access_key
+    ASSETS_SECRET_KEY      = sevalla_object_storage.assets.secret_key
+
     # Application configuration
-    JWT_SECRET     = var.jwt_secret
-    API_BASE_URL   = "https://api.${var.domain}"
-    CORS_ORIGIN    = "https://${var.domain}"
+    JWT_SECRET   = var.jwt_secret
+    API_BASE_URL = "https://api.${var.domain}"
+    CORS_ORIGIN  = "https://${var.domain}"
   }
-  
+
   instances = var.api_instances
   memory    = 1024
   cpu       = 500
-  
+
   domain = "api.${var.domain}"
 }
 
 # Frontend static site
 resource "sevalla_static_site" "frontend" {
   name = "${var.app_name}-frontend"
-  
+
   repository {
     url    = var.frontend_repo_url
     type   = "github"
     branch = var.frontend_branch
   }
-  
+
   branch    = var.frontend_branch
   build_dir = "dist"
   build_cmd = "npm ci && REACT_APP_API_URL=https://api.${var.domain} npm run build"
-  
+
   domain = var.domain
 }
 
@@ -249,11 +249,11 @@ output "object_storage" {
 output "resource_ids" {
   description = "Resource IDs for reference"
   value = {
-    api_app_id      = sevalla_application.api.id
+    api_app_id       = sevalla_application.api.id
     frontend_site_id = sevalla_static_site.frontend.id
-    database_id     = sevalla_database.main_db.id
-    cache_id        = sevalla_database.cache.id
-    uploads_bucket  = sevalla_object_storage.uploads.id
-    assets_bucket   = sevalla_object_storage.assets.id
+    database_id      = sevalla_database.main_db.id
+    cache_id         = sevalla_database.cache.id
+    uploads_bucket   = sevalla_object_storage.uploads.id
+    assets_bucket    = sevalla_object_storage.assets.id
   }
 }

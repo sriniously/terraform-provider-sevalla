@@ -15,9 +15,9 @@ provider "sevalla" {
 
 # Example: Create an application
 resource "sevalla_application" "example" {
-  name         = "my-app"
-  github_repo  = "https://github.com/user/repo"
-  branch       = "main"
+  name          = "my-app"
+  github_repo   = "https://github.com/user/repo"
+  branch        = "main"
   build_command = "npm run build"
   environment_variables = {
     NODE_ENV = "production"
@@ -26,9 +26,9 @@ resource "sevalla_application" "example" {
 
 # Example: Create a database
 resource "sevalla_database" "example" {
-  name         = "my-database"
-  type         = "postgresql"
-  version      = "15"
-  plan         = "starter"
-  region       = "us-east-1"
+  name    = "my-database"
+  type    = "postgresql"
+  version = "15"
+  plan    = "starter"
+  region  = "us-east-1"
 }
