@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -31,5 +32,12 @@ func TestProvider(t *testing.T) {
 	provider := New("test")()
 	if provider == nil {
 		t.Fatal("Provider should not be nil")
+	}
+}
+
+func testAccPreCheck(t *testing.T) {
+	// Skip acceptance tests if SEVALLA_TOKEN is not set
+	if os.Getenv("SEVALLA_TOKEN") == "" {
+		t.Skip("SEVALLA_TOKEN environment variable must be set for acceptance tests")
 	}
 }

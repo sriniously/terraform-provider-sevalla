@@ -54,7 +54,3 @@ resource "sevalla_application" "test" {
 `, name)
 }
 
-func testAccPreCheck(_ *testing.T) {
-	// You can add pre-checks here if needed
-	// For example, check for required environment variables
-}
