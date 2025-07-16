@@ -7,7 +7,7 @@ The Sevalla Terraform provider allows you to manage Sevalla cloud resources usin
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.24 (for building from source)
+- [Go](https://golang.org/doc/install) >= 1.21 (for building from source)
 - A Sevalla account with API access
 
 ## Installation
@@ -21,7 +21,7 @@ terraform {
   required_providers {
     sevalla = {
       source  = "sriniously/sevalla"
-      version = "~> 1.0"
+      version = "~> 0.1.0"
     }
   }
 }
@@ -145,44 +145,29 @@ terraform plan
 terraform apply
 ```
 
-## Comprehensive Examples
+## Available Examples
 
-We've created detailed examples demonstrating real-world use cases with integrated resources:
+We've created practical examples demonstrating real-world use cases:
 
-### 1. [Full-Stack Application](examples/full-stack-app/)
+### 1. [Basic Example](examples/basic/)
+Simple application with database setup:
+- **Application**: Node.js application with GitHub repository
+- **Database**: PostgreSQL database with connection configuration
+- **Configuration**: Environment variables and resource allocation
+
+### 2. [Full-Stack Application](examples/full-stack-app/)
 Complete web application with frontend, backend, database, cache, and storage:
-- **Frontend**: React/Vue static site with custom domain
-- **Backend**: Node.js API with load balancing
+- **Frontend**: Static site with custom domain
+- **Backend**: API application with environment configuration
 - **Database**: PostgreSQL for persistent data
 - **Cache**: Redis for sessions and caching
 - **Storage**: Object storage for uploads and assets
 - **CI/CD**: Automated deployment pipelines
 
-### 2. [Microservices Architecture](examples/microservices/)
-Enterprise-grade microservices platform:
-- **API Gateway**: Central entry point with rate limiting
-- **User Service**: Authentication and user management
-- **Order Service**: Order processing with payment integration
-- **Notification Service**: Email, SMS, and push notifications
-- **Shared Services**: PostgreSQL database and Redis message queue
-- **Admin Dashboard**: Monitoring and management interface
-
-### 3. [Multi-Environment Setup](examples/multi-environment/)
-Development, staging, and production environments:
-- **Environment-specific scaling**: Different resource sizes per environment
-- **Branch-based deployments**: Separate Git branches for each environment
-- **Feature flags**: Environment-specific feature toggles
-- **Conditional resources**: Analytics only in production
-- **Terraform workspaces**: Clean separation of environments
-
-### 4. [E-commerce Platform](examples/e-commerce/)
-Complete e-commerce solution:
-- **Customer Storefront**: Product catalog and shopping cart
-- **Admin Dashboard**: Inventory and order management
-- **Payment Processing**: Stripe and PayPal integration
-- **Order Management**: Background workers for processing
-- **Analytics**: Sales reporting and customer insights
-- **Multi-storage**: Product images, user uploads, and documents
+### 3. [Provider Configuration](examples/provider/)
+Basic provider setup examples:
+- **Authentication**: API token configuration
+- **Basic Resources**: Simple resource creation examples
 
 ## Quick Start Examples
 
@@ -261,11 +246,10 @@ resource "sevalla_application" "app" {
   name = "myapp-${local.env}"
   
   repository {
-    url  = "https://github.com/mycompany/app"
-    type = "github"
+    url    = "https://github.com/mycompany/app"
+    type   = "github"
+    branch = local.env == "prod" ? "main" : local.env
   }
-  
-  branch = local.env == "prod" ? "main" : local.env
   
   environment = {
     ENVIRONMENT = local.env
@@ -480,6 +464,25 @@ If migrating from another cloud provider:
 4. Test thoroughly before switching DNS
 
 ## Complete Provider Reference
+
+### Supported Resources
+
+The provider currently supports the following resources:
+
+1. **sevalla_application** - Manages applications with repository integration, build configuration, and environment variables
+2. **sevalla_database** - Manages databases (PostgreSQL, MySQL, MariaDB, Redis)
+3. **sevalla_static_site** - Manages static websites with build configuration
+4. **sevalla_object_storage** - Manages object storage buckets
+5. **sevalla_pipeline** - Manages CI/CD deployment pipelines
+
+### Supported Data Sources
+
+The provider includes data sources for fetching existing resources:
+
+1. **sevalla_application** - Fetches existing application details
+2. **sevalla_database** - Fetches existing database details
+3. **sevalla_static_site** - Fetches existing static site details
+4. **sevalla_object_storage** - Fetches existing object storage details
 
 ### Provider Configuration
 
@@ -759,6 +762,18 @@ terraform workspace select production
 terraform apply
 ```
 
+### Running Tests
+
+If you're contributing to the provider development:
+
+```bash
+# Run unit tests
+make test
+
+# Run acceptance tests (requires SEVALLA_TOKEN)
+make testacc
+```
+
 ## Security Best Practices
 
 ### 1. Never Commit Secrets
@@ -931,6 +946,29 @@ A: Run `terraform refresh` to update the state, or `terraform plan` to see the d
 - **Issues**: [GitHub Issues](https://github.com/sriniously/terraform-provider-sevalla/issues)
 - **Community**: [Sevalla Community Forum](https://community.sevalla.com)
 - **API Reference**: [api-docs.sevalla.com](https://api-docs.sevalla.com)
+
+## Development Status
+
+This provider is actively maintained and supports all core Sevalla resources. Current implementation status:
+
+### ✅ Fully Implemented
+- **Resources**: All 5 resources (application, database, static_site, object_storage, pipeline)
+- **Data Sources**: 4 data sources (application, database, static_site, object_storage)
+- **API Client**: Complete REST API client with error handling
+- **Documentation**: Comprehensive documentation for all resources
+
+### 🧪 Testing Status
+- **Application Resource**: ✅ Full test coverage
+- **Database Resource**: ✅ Full test coverage  
+- **Static Site Resource**: ⚠️ Implementation complete, tests pending
+- **Object Storage Resource**: ⚠️ Implementation complete, tests pending
+- **Pipeline Resource**: ⚠️ Implementation complete, tests pending
+
+### 📋 TODO List
+- [ ] Add tests for remaining resources
+- [ ] Add pipeline data source
+- [ ] Add more comprehensive integration tests
+- [ ] Add performance optimizations
 
 ## Contributing
 
