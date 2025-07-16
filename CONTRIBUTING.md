@@ -15,7 +15,7 @@ We welcome contributions to the Terraform Provider for Sevalla! This document pr
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) >= 1.23
+- [Go](https://golang.org/doc/install) >= 1.24
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
 - [golangci-lint](https://golangci-lint.run/usage/install/) for code linting
 

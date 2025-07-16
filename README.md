@@ -7,7 +7,7 @@ The Sevalla Terraform provider allows you to manage Sevalla cloud resources usin
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.23 (for building from source)
+- [Go](https://golang.org/doc/install) >= 1.24 (for building from source)
 - A Sevalla account with API access
 
 ## Installation
