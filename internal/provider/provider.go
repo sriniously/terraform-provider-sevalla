@@ -131,6 +131,7 @@ func (p *SevallaProvider) DataSources(ctx context.Context) []func() datasource.D
 		NewDatabaseDataSource,
 		NewStaticSiteDataSource,
 		NewObjectStorageDataSource,
+		NewPipelineDataSource,
 	}
 }
 

@@ -483,6 +483,7 @@ The provider includes data sources for fetching existing resources:
 2. **sevalla_database** - Fetches existing database details
 3. **sevalla_static_site** - Fetches existing static site details
 4. **sevalla_object_storage** - Fetches existing object storage details
+5. **sevalla_pipeline** - Fetches existing pipeline details
 
 ### Provider Configuration
 
@@ -826,7 +827,41 @@ terraform {
 
 ## Performance Optimization
 
-### 1. Use Data Sources to Reduce API Calls
+The Sevalla provider includes comprehensive performance optimizations to improve efficiency and reduce API calls. See [PERFORMANCE.md](PERFORMANCE.md) for detailed configuration and tuning guidance.
+
+### Built-in Optimizations
+
+1. **Caching**: Automatic caching of API responses with configurable TTL
+2. **Rate Limiting**: Built-in rate limiting to prevent API throttling
+3. **Batch Processing**: Groups related operations for efficiency
+4. **Connection Pooling**: Efficient HTTP connection management
+5. **Request Retry**: Automatic retry with exponential backoff
+
+### Configuration
+
+Configure performance settings using environment variables:
+
+```bash
+# Enable caching with 5-minute TTL
+export SEVALLA_CACHE_ENABLED=true
+export SEVALLA_CACHE_TTL=5m
+
+# Rate limiting (10 requests per second)
+export SEVALLA_RATE_LIMIT_PER_SECOND=10
+export SEVALLA_RATE_LIMIT_BURST=20
+
+# Batch processing
+export SEVALLA_BATCH_SIZE=10
+export SEVALLA_BATCH_TIMEOUT=100ms
+
+# Connection pooling
+export SEVALLA_MAX_OPEN_CONNS=20
+export SEVALLA_MAX_IDLE_CONNS=10
+```
+
+### Best Practices
+
+1. **Use Data Sources to Reduce API Calls**
 
 ```hcl
 # Instead of creating multiple similar resources
@@ -841,7 +876,7 @@ resource "sevalla_pipeline" "pipeline" {
 }
 ```
 
-### 2. Parallelize Resource Creation
+2. **Parallelize Resource Creation**
 
 ```bash
 # Default parallelism is 10
@@ -854,7 +889,7 @@ terraform apply -parallelism=20
 terraform apply -parallelism=1
 ```
 
-### 3. Use Targeted Applies for Large Configurations
+3. **Use Targeted Applies for Large Configurations**
 
 ```bash
 # Apply only specific resources
@@ -953,22 +988,24 @@ This provider is actively maintained and supports all core Sevalla resources. Cu
 
 ### ✅ Fully Implemented
 - **Resources**: All 5 resources (application, database, static_site, object_storage, pipeline)
-- **Data Sources**: 4 data sources (application, database, static_site, object_storage)
+- **Data Sources**: All 5 data sources (application, database, static_site, object_storage, pipeline)
 - **API Client**: Complete REST API client with error handling
 - **Documentation**: Comprehensive documentation for all resources
+- **Performance Optimizations**: Caching, rate limiting, batch processing, connection pooling
 
 ### 🧪 Testing Status
 - **Application Resource**: ✅ Full test coverage
 - **Database Resource**: ✅ Full test coverage  
-- **Static Site Resource**: ⚠️ Implementation complete, tests pending
-- **Object Storage Resource**: ⚠️ Implementation complete, tests pending
-- **Pipeline Resource**: ⚠️ Implementation complete, tests pending
+- **Static Site Resource**: ✅ Full test coverage
+- **Object Storage Resource**: ✅ Full test coverage
+- **Pipeline Resource**: ✅ Full test coverage
+- **Integration Tests**: ✅ Comprehensive integration tests added
 
-### 📋 TODO List
-- [ ] Add tests for remaining resources
-- [ ] Add pipeline data source
-- [ ] Add more comprehensive integration tests
-- [ ] Add performance optimizations
+### 📋 Completed Features
+- ✅ Add tests for remaining resources
+- ✅ Add pipeline data source
+- ✅ Add more comprehensive integration tests
+- ✅ Add performance optimizations
 
 ## Contributing
 
