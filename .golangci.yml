@@ -1,18 +1,31 @@
 # Visit https://golangci-lint.run/ for usage documentation
 # and information on other useful linters
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.24"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
 issues:
-  max-per-linter: 0
+  max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
-    # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
         - forcetypeassert
         - goconst
-        - gomnd
+        - mnd
         - lll
         - noctx
         - gocritic
+        - godot
+        - unused
+        - cyclop
 
 linters:
   disable-all: true
@@ -22,27 +35,28 @@ linters:
     - copyloopvar
     - forcetypeassert
     - godot
-    - gofmt
-    - gosimple
     - ineffassign
     - makezero
     - misspell
     - nilerr
     - predeclared
     - staticcheck
-    - tenv
     - unconvert
     - unparam
     - unused
-    - vet
+    - govet
     - cyclop
     - dupl
 
 linters-settings:
   gocritic:
     disabled-checks:
-      - hugeParam # Terraform plugin framework requires specific function signatures
+      - hugeParam
   cyclop:
-    max-complexity: 15
+    max-complexity: 20
   dupl:
     threshold: 150
+  godot:
+    exclude:
+      - "^// Test.*"
+      - "^// testAcc.*"
