@@ -58,7 +58,11 @@ func (p *SevallaProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	}
 }
 
-func (p *SevallaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (p *SevallaProvider) Configure(
+	ctx context.Context,
+	req provider.ConfigureRequest,
+	resp *provider.ConfigureResponse,
+) {
 	var data SevallaProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
@@ -83,7 +87,8 @@ func (p *SevallaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	if token == "" {
 		resp.Diagnostics.AddError(
 			"Unable to find token",
-			"Token cannot be an empty string. Please set the token in the provider configuration or via the SEVALLA_TOKEN environment variable.",
+			"Token cannot be an empty string. Please set the token in the provider "+
+				"configuration or via the SEVALLA_TOKEN environment variable.",
 		)
 		return
 	}

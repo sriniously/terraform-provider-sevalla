@@ -20,11 +20,19 @@ type ObjectStorageDataSource struct {
 	client *sevallaapi.Client
 }
 
-func (d *ObjectStorageDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *ObjectStorageDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_object_storage"
 }
 
-func (d *ObjectStorageDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ObjectStorageDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fetches information about a Sevalla object storage bucket.",
 
@@ -74,7 +82,11 @@ func (d *ObjectStorageDataSource) Schema(ctx context.Context, req datasource.Sch
 	}
 }
 
-func (d *ObjectStorageDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ObjectStorageDataSource) Configure(
+	ctx context.Context,
+	req datasource.ConfigureRequest,
+	resp *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -83,7 +95,8 @@ func (d *ObjectStorageDataSource) Configure(ctx context.Context, req datasource.
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}

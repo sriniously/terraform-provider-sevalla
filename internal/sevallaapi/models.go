@@ -2,7 +2,7 @@ package sevallaapi
 
 import "time"
 
-// Application represents a Sevalla application
+// Application represents a Sevalla application.
 type Application struct {
 	ID            string            `json:"id"`
 	Name          string            `json:"name"`
@@ -21,14 +21,14 @@ type Application struct {
 	UpdatedAt     time.Time         `json:"updated_at"`
 }
 
-// Repository represents a source code repository
+// Repository represents a source code repository.
 type Repository struct {
 	URL    string `json:"url"`
 	Type   string `json:"type"` // github, gitlab, bitbucket
 	Branch string `json:"branch,omitempty"`
 }
 
-// CreateApplicationRequest represents the request to create an application
+// CreateApplicationRequest represents the request to create an application.
 type CreateApplicationRequest struct {
 	Name          string            `json:"name"`
 	Description   string            `json:"description,omitempty"`
@@ -42,7 +42,7 @@ type CreateApplicationRequest struct {
 	CPU           int               `json:"cpu,omitempty"`
 }
 
-// UpdateApplicationRequest represents the request to update an application
+// UpdateApplicationRequest represents the request to update an application.
 type UpdateApplicationRequest struct {
 	Name          *string            `json:"name,omitempty"`
 	Description   *string            `json:"description,omitempty"`
@@ -56,7 +56,7 @@ type UpdateApplicationRequest struct {
 	CPU           *int               `json:"cpu,omitempty"`
 }
 
-// Database represents a Sevalla database
+// Database represents a Sevalla database.
 type Database struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -72,7 +72,7 @@ type Database struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// CreateDatabaseRequest represents the request to create a database
+// CreateDatabaseRequest represents the request to create a database.
 type CreateDatabaseRequest struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"` // postgresql, mysql, mariadb, redis
@@ -81,14 +81,14 @@ type CreateDatabaseRequest struct {
 	Password string `json:"password,omitempty"`
 }
 
-// UpdateDatabaseRequest represents the request to update a database
+// UpdateDatabaseRequest represents the request to update a database.
 type UpdateDatabaseRequest struct {
 	Name     *string `json:"name,omitempty"`
 	Size     *string `json:"size,omitempty"`
 	Password *string `json:"password,omitempty"`
 }
 
-// StaticSite represents a Sevalla static site
+// StaticSite represents a Sevalla static site.
 type StaticSite struct {
 	ID          string      `json:"id"`
 	Name        string      `json:"name"`
@@ -102,7 +102,7 @@ type StaticSite struct {
 	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
-// CreateStaticSiteRequest represents the request to create a static site
+// CreateStaticSiteRequest represents the request to create a static site.
 type CreateStaticSiteRequest struct {
 	Name       string      `json:"name"`
 	Repository *Repository `json:"repository,omitempty"`
@@ -111,7 +111,7 @@ type CreateStaticSiteRequest struct {
 	BuildCmd   string      `json:"build_cmd,omitempty"`
 }
 
-// UpdateStaticSiteRequest represents the request to update a static site
+// UpdateStaticSiteRequest represents the request to update a static site.
 type UpdateStaticSiteRequest struct {
 	Name       *string     `json:"name,omitempty"`
 	Repository *Repository `json:"repository,omitempty"`
@@ -120,7 +120,7 @@ type UpdateStaticSiteRequest struct {
 	BuildCmd   *string     `json:"build_cmd,omitempty"`
 }
 
-// ObjectStorage represents a Sevalla object storage bucket
+// ObjectStorage represents a Sevalla object storage bucket.
 type ObjectStorage struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -134,18 +134,18 @@ type ObjectStorage struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// CreateObjectStorageRequest represents the request to create object storage
+// CreateObjectStorageRequest represents the request to create object storage.
 type CreateObjectStorageRequest struct {
 	Name   string `json:"name"`
 	Region string `json:"region,omitempty"`
 }
 
-// UpdateObjectStorageRequest represents the request to update object storage
+// UpdateObjectStorageRequest represents the request to update object storage.
 type UpdateObjectStorageRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-// Deployment represents a deployment
+// Deployment represents a deployment.
 type Deployment struct {
 	ID          string    `json:"id"`
 	AppID       string    `json:"app_id"`
@@ -157,7 +157,7 @@ type Deployment struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// Pipeline represents a deployment pipeline
+// Pipeline represents a deployment pipeline.
 type Pipeline struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -168,7 +168,7 @@ type Pipeline struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// CreatePipelineRequest represents the request to create a pipeline
+// CreatePipelineRequest represents the request to create a pipeline.
 type CreatePipelineRequest struct {
 	Name       string `json:"name"`
 	AppID      string `json:"app_id"`
@@ -176,7 +176,7 @@ type CreatePipelineRequest struct {
 	AutoDeploy bool   `json:"auto_deploy"`
 }
 
-// UpdatePipelineRequest represents the request to update a pipeline
+// UpdatePipelineRequest represents the request to update a pipeline.
 type UpdatePipelineRequest struct {
 	Name       *string `json:"name,omitempty"`
 	Branch     *string `json:"branch,omitempty"`

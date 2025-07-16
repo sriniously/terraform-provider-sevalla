@@ -38,7 +38,11 @@ type ObjectStorageResourceModel struct {
 	UpdatedAt types.String `tfsdk:"updated_at"`
 }
 
-func (r *ObjectStorageResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ObjectStorageResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_object_storage"
 }
 
@@ -98,7 +102,11 @@ func (r *ObjectStorageResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 }
 
-func (r *ObjectStorageResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ObjectStorageResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -107,7 +115,8 @@ func (r *ObjectStorageResource) Configure(ctx context.Context, req resource.Conf
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -206,11 +215,19 @@ func (r *ObjectStorageResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func (r *ObjectStorageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ObjectStorageResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ObjectStorageResource) updateModelFromAPI(ctx context.Context, data *ObjectStorageResourceModel, bucket *sevallaapi.ObjectStorage) {
+func (r *ObjectStorageResource) updateModelFromAPI(
+	_ context.Context,
+	data *ObjectStorageResourceModel,
+	bucket *sevallaapi.ObjectStorage,
+) {
 	data.ID = types.StringValue(bucket.ID)
 	data.Name = types.StringValue(bucket.Name)
 	data.Region = types.StringValue(bucket.Region)

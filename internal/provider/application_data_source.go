@@ -1,3 +1,4 @@
+// Package provider contains the Terraform provider implementation for Sevalla.
 package provider
 
 import (
@@ -21,11 +22,19 @@ type ApplicationDataSource struct {
 	client *sevallaapi.Client
 }
 
-func (d *ApplicationDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *ApplicationDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_application"
 }
 
-func (d *ApplicationDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ApplicationDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fetches information about a Sevalla application.",
 
@@ -109,7 +118,11 @@ func (d *ApplicationDataSource) Schema(ctx context.Context, req datasource.Schem
 	}
 }
 
-func (d *ApplicationDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ApplicationDataSource) Configure(
+	ctx context.Context,
+	req datasource.ConfigureRequest,
+	resp *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -118,7 +131,8 @@ func (d *ApplicationDataSource) Configure(ctx context.Context, req datasource.Co
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}

@@ -40,7 +40,11 @@ type DatabaseResourceModel struct {
 	UpdatedAt types.String `tfsdk:"updated_at"`
 }
 
-func (r *DatabaseResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *DatabaseResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_database"
 }
 
@@ -111,7 +115,11 @@ func (r *DatabaseResource) Schema(ctx context.Context, req resource.SchemaReques
 	}
 }
 
-func (r *DatabaseResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *DatabaseResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -120,7 +128,8 @@ func (r *DatabaseResource) Configure(ctx context.Context, req resource.Configure
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -187,6 +196,7 @@ func (r *DatabaseResource) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+//nolint:dupl // database and pipeline resources have similar update patterns
 func (r *DatabaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data DatabaseResourceModel
 
@@ -238,11 +248,19 @@ func (r *DatabaseResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 }
 
-func (r *DatabaseResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *DatabaseResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *DatabaseResource) updateModelFromAPI(ctx context.Context, data *DatabaseResourceModel, db *sevallaapi.Database) {
+func (r *DatabaseResource) updateModelFromAPI(
+	_ context.Context,
+	data *DatabaseResourceModel,
+	db *sevallaapi.Database,
+) {
 	data.ID = types.StringValue(db.ID)
 	data.Name = types.StringValue(db.Name)
 	data.Type = types.StringValue(db.Type)

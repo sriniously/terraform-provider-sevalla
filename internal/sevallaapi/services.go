@@ -5,11 +5,12 @@ import (
 	"fmt"
 )
 
-// ApplicationService handles application-related API operations
+// ApplicationService handles application-related API operations.
 type ApplicationService struct {
 	client *Client
 }
 
+// NewApplicationService creates a new ApplicationService instance with the provided client.
 func NewApplicationService(client *Client) *ApplicationService {
 	return &ApplicationService{client: client}
 }
@@ -32,7 +33,11 @@ func (s *ApplicationService) Create(ctx context.Context, req CreateApplicationRe
 	return &app, err
 }
 
-func (s *ApplicationService) Update(ctx context.Context, id string, req UpdateApplicationRequest) (*Application, error) {
+func (s *ApplicationService) Update(
+	ctx context.Context,
+	id string,
+	req UpdateApplicationRequest,
+) (*Application, error) {
 	var app Application
 	err := s.client.Put(ctx, fmt.Sprintf("/applications/%s", id), req, &app)
 	return &app, err
@@ -42,11 +47,12 @@ func (s *ApplicationService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/applications/%s", id))
 }
 
-// DatabaseService handles database-related API operations
+// DatabaseService handles database-related API operations.
 type DatabaseService struct {
 	client *Client
 }
 
+// NewDatabaseService creates a new DatabaseService instance with the provided client.
 func NewDatabaseService(client *Client) *DatabaseService {
 	return &DatabaseService{client: client}
 }
@@ -79,11 +85,12 @@ func (s *DatabaseService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/databases/%s", id))
 }
 
-// StaticSiteService handles static site-related API operations
+// StaticSiteService handles static site-related API operations.
 type StaticSiteService struct {
 	client *Client
 }
 
+// NewStaticSiteService creates a new StaticSiteService instance with the provided client.
 func NewStaticSiteService(client *Client) *StaticSiteService {
 	return &StaticSiteService{client: client}
 }
@@ -116,11 +123,12 @@ func (s *StaticSiteService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/static-sites/%s", id))
 }
 
-// ObjectStorageService handles object storage-related API operations
+// ObjectStorageService handles object storage-related API operations.
 type ObjectStorageService struct {
 	client *Client
 }
 
+// NewObjectStorageService creates a new ObjectStorageService instance with the provided client.
 func NewObjectStorageService(client *Client) *ObjectStorageService {
 	return &ObjectStorageService{client: client}
 }
@@ -143,7 +151,11 @@ func (s *ObjectStorageService) Create(ctx context.Context, req CreateObjectStora
 	return &bucket, err
 }
 
-func (s *ObjectStorageService) Update(ctx context.Context, id string, req UpdateObjectStorageRequest) (*ObjectStorage, error) {
+func (s *ObjectStorageService) Update(
+	ctx context.Context,
+	id string,
+	req UpdateObjectStorageRequest,
+) (*ObjectStorage, error) {
 	var bucket ObjectStorage
 	err := s.client.Put(ctx, fmt.Sprintf("/object-storage/%s", id), req, &bucket)
 	return &bucket, err
@@ -153,11 +165,12 @@ func (s *ObjectStorageService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/object-storage/%s", id))
 }
 
-// PipelineService handles pipeline-related API operations
+// PipelineService handles pipeline-related API operations.
 type PipelineService struct {
 	client *Client
 }
 
+// NewPipelineService creates a new PipelineService instance with the provided client.
 func NewPipelineService(client *Client) *PipelineService {
 	return &PipelineService{client: client}
 }
@@ -190,11 +203,12 @@ func (s *PipelineService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/pipelines/%s", id))
 }
 
-// DeploymentService handles deployment-related API operations
+// DeploymentService handles deployment-related API operations.
 type DeploymentService struct {
 	client *Client
 }
 
+// NewDeploymentService creates a new DeploymentService instance with the provided client.
 func NewDeploymentService(client *Client) *DeploymentService {
 	return &DeploymentService{client: client}
 }

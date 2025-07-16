@@ -51,7 +51,11 @@ type RepositoryModel struct {
 	Branch types.String `tfsdk:"branch"`
 }
 
-func (r *ApplicationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ApplicationResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_application"
 }
 
@@ -142,7 +146,11 @@ func (r *ApplicationResource) Schema(ctx context.Context, req resource.SchemaReq
 	}
 }
 
-func (r *ApplicationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ApplicationResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -151,7 +159,8 @@ func (r *ApplicationResource) Configure(ctx context.Context, req resource.Config
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -159,6 +168,7 @@ func (r *ApplicationResource) Configure(ctx context.Context, req resource.Config
 	r.client = client.Client
 }
 
+//nolint:cyclop // terraform resource methods require handling multiple conditional fields
 func (r *ApplicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ApplicationResourceModel
 
@@ -256,6 +266,7 @@ func (r *ApplicationResource) Read(ctx context.Context, req resource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+//nolint:cyclop // terraform resource methods require handling multiple conditional fields
 func (r *ApplicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data ApplicationResourceModel
 
@@ -357,11 +368,19 @@ func (r *ApplicationResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-func (r *ApplicationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ApplicationResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ApplicationResource) updateModelFromAPI(ctx context.Context, data *ApplicationResourceModel, app *sevallaapi.Application) {
+func (r *ApplicationResource) updateModelFromAPI(
+	_ context.Context,
+	data *ApplicationResourceModel,
+	app *sevallaapi.Application,
+) {
 	data.ID = types.StringValue(app.ID)
 	data.Name = types.StringValue(app.Name)
 	data.Description = types.StringValue(app.Description)

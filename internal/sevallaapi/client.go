@@ -1,3 +1,4 @@
+// Package sevallaapi provides a client for the Sevalla API.
 package sevallaapi
 
 import (
@@ -29,6 +30,7 @@ type Config struct {
 	Timeout time.Duration
 }
 
+// NewClient creates a new Sevalla API client with the provided configuration.
 func NewClient(config Config) *Client {
 	if config.BaseURL == "" {
 		config.BaseURL = DefaultBaseURL
@@ -78,9 +80,10 @@ func (c *Client) Get(ctx context.Context, path string, result interface{}) error
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode >= 400 {
+	const httpBadRequestThreshold = 400
+	if resp.StatusCode >= httpBadRequestThreshold {
 		return c.handleError(resp)
 	}
 
@@ -92,9 +95,10 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}, result
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode >= 400 {
+	const httpBadRequestThreshold = 400
+	if resp.StatusCode >= httpBadRequestThreshold {
 		return c.handleError(resp)
 	}
 
@@ -110,9 +114,10 @@ func (c *Client) Put(ctx context.Context, path string, body interface{}, result 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode >= 400 {
+	const httpBadRequestThreshold = 400
+	if resp.StatusCode >= httpBadRequestThreshold {
 		return c.handleError(resp)
 	}
 
@@ -128,9 +133,10 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode >= 400 {
+	const httpBadRequestThreshold = 400
+	if resp.StatusCode >= httpBadRequestThreshold {
 		return c.handleError(resp)
 	}
 

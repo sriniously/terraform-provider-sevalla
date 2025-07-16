@@ -35,7 +35,11 @@ type PipelineResourceModel struct {
 	UpdatedAt  types.String `tfsdk:"updated_at"`
 }
 
-func (r *PipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *PipelineResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline"
 }
 
@@ -82,7 +86,11 @@ func (r *PipelineResource) Schema(ctx context.Context, req resource.SchemaReques
 	}
 }
 
-func (r *PipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *PipelineResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -91,7 +99,8 @@ func (r *PipelineResource) Configure(ctx context.Context, req resource.Configure
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -151,6 +160,7 @@ func (r *PipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+//nolint:dupl // database and pipeline resources have similar update patterns
 func (r *PipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data PipelineResourceModel
 
@@ -202,11 +212,19 @@ func (r *PipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 }
 
-func (r *PipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *PipelineResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *PipelineResource) updateModelFromAPI(ctx context.Context, data *PipelineResourceModel, pipeline *sevallaapi.Pipeline) {
+func (r *PipelineResource) updateModelFromAPI(
+	_ context.Context,
+	data *PipelineResourceModel,
+	pipeline *sevallaapi.Pipeline,
+) {
 	data.ID = types.StringValue(pipeline.ID)
 	data.Name = types.StringValue(pipeline.Name)
 	data.AppID = types.StringValue(pipeline.AppID)

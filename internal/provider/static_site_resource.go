@@ -40,7 +40,11 @@ type StaticSiteResourceModel struct {
 	UpdatedAt  types.String `tfsdk:"updated_at"`
 }
 
-func (r *StaticSiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *StaticSiteResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_static_site"
 }
 
@@ -110,7 +114,11 @@ func (r *StaticSiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 	}
 }
 
-func (r *StaticSiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *StaticSiteResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -119,7 +127,8 @@ func (r *StaticSiteResource) Configure(ctx context.Context, req resource.Configu
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
+				"Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -271,11 +280,19 @@ func (r *StaticSiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 }
 
-func (r *StaticSiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *StaticSiteResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *StaticSiteResource) updateModelFromAPI(ctx context.Context, data *StaticSiteResourceModel, site *sevallaapi.StaticSite) {
+func (r *StaticSiteResource) updateModelFromAPI(
+	_ context.Context,
+	data *StaticSiteResourceModel,
+	site *sevallaapi.StaticSite,
+) {
 	data.ID = types.StringValue(site.ID)
 	data.Name = types.StringValue(site.Name)
 	data.Domain = types.StringValue(site.Domain)

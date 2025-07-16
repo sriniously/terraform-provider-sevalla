@@ -1,4 +1,5 @@
 ---
+version: 2
 run:
   timeout: 5m
   allow-parallel-runners: true
@@ -13,21 +14,18 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
-    - exportloopref
+    - copyloopvar
     - forbidigo
     - forcetypeassert
     - goconst
     - gocritic
     - gocyclo
     - godot
-    - gofmt
-    - goimports
-    - gomnd
+    - mnd
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - lll
@@ -39,12 +37,9 @@ linters:
     - nolintlint
     - prealloc
     - predeclared
-    - revive
     - staticcheck
-    - stylecheck
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -58,7 +53,7 @@ issues:
       linters:
         - forcetypeassert
         - goconst
-        - gomnd
+        - mnd
         - lll
         - noctx
         - wsl
@@ -93,7 +88,7 @@ linters-settings:
   godot:
     scope: declarations
     capital: false
-  gomnd:
+  mnd:
     checks:
       - argument
       - case
@@ -107,7 +102,8 @@ linters-settings:
     ignored-functions:
       - strings.SplitN
   govet:
-    check-shadowing: true
+    enable:
+      - shadow
     settings:
       printf:
         funcs:
