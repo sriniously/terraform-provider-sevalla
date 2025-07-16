@@ -1,122 +1,48 @@
----
-run:
-  timeout: 5m
-  allow-parallel-runners: true
-
-linters:
-  enable:
-    - asciicheck
-    - bodyclose
-    - cyclop
-    - dupl
-    - durationcheck
-    - errcheck
-    - errorlint
-    - exhaustive
-    - copyloopvar
-    - forbidigo
-    - forcetypeassert
-    - goconst
-    - gocritic
-    - gocyclo
-    - godot
-    - mnd
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - govet
-    - ineffassign
-    - lll
-    - makezero
-    - misspell
-    - nakedret
-    - nilerr
-    - noctx
-    - nolintlint
-    - prealloc
-    - predeclared
-    - staticcheck
-    - thelper
-    - tparallel
-    - unconvert
-    - unparam
-    - unused
-    - wastedassign
-    - whitespace
-
+# Visit https://golangci-lint.run/ for usage documentation
+# and information on other useful linters
 issues:
+  max-per-linter: 0
+  max-same-issues: 0
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
         - forcetypeassert
         - goconst
-        - mnd
+        - gomnd
         - lll
         - noctx
-        - wsl
+        - gocritic
+
+linters:
+  disable-all: true
+  enable:
+    - durationcheck
+    - errcheck
+    - copyloopvar
+    - forcetypeassert
+    - godot
+    - gofmt
+    - gosimple
+    - ineffassign
+    - makezero
+    - misspell
+    - nilerr
+    - predeclared
+    - staticcheck
+    - tenv
+    - unconvert
+    - unparam
+    - unused
+    - vet
+    - cyclop
+    - dupl
 
 linters-settings:
+  gocritic:
+    disabled-checks:
+      - hugeParam # Terraform plugin framework requires specific function signatures
   cyclop:
     max-complexity: 15
   dupl:
     threshold: 150
-  errorlint:
-    errorf: true
-    asserts: true
-    comparison: true
-  forbidigo:
-    forbid:
-      - '^print.*$'
-      - 'fmt\.Print.*'
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-  gocyclo:
-    min-complexity: 15
-  godot:
-    scope: declarations
-    capital: false
-  mnd:
-    checks:
-      - argument
-      - case
-      - condition
-      - return
-    ignored-numbers:
-      - '0'
-      - '1'
-      - '2'
-      - '3'
-    ignored-functions:
-      - strings.SplitN
-  govet:
-    enable:
-      - shadow
-    settings:
-      printf:
-        funcs:
-          - (github.com/hashicorp/terraform-plugin-log/tflog).Trace
-          - (github.com/hashicorp/terraform-plugin-log/tflog).Debug
-          - (github.com/hashicorp/terraform-plugin-log/tflog).Info
-          - (github.com/hashicorp/terraform-plugin-log/tflog).Warn
-          - (github.com/hashicorp/terraform-plugin-log/tflog).Error
-  lll:
-    line-length: 140
-  misspell:
-    locale: US
-  nolintlint:
-    allow-leading-space: true
-    allow-unused: false
-    require-explanation: false
-    require-specific: false
