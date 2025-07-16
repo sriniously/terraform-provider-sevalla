@@ -25,12 +25,14 @@ jobs:
       
       - run: go mod download
       
+      - run: go mod tidy
+      
       - run: go build -v .
       
       - name: Run linting
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.61
+          version: v2.1
 
   generate:
     runs-on: ubuntu-latest
