@@ -1,0 +1,25 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and customize with your values
+
+# Required: Sevalla API token
+sevalla_token = "your-sevalla-api-token-here"
+
+# Application configuration
+app_name = "mycompany-app"
+domain   = "mycompany.com"
+region   = "us-east-1"
+
+# Repository URLs
+api_repo_url      = "https://github.com/mycompany/api"
+frontend_repo_url = "https://github.com/mycompany/frontend"
+
+# Git branches
+api_branch      = "main"
+frontend_branch = "main"
+
+# Security (use strong, unique values)
+db_password = "your-secure-database-password-here"
+jwt_secret  = "your-jwt-secret-32-characters-minimum"
+
+# Scaling
+api_instances = 2
