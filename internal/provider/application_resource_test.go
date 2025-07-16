@@ -53,4 +53,3 @@ resource "sevalla_application" "test" {
 }
 `, name)
 }
-
