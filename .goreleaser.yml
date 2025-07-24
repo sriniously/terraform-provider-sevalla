@@ -2,80 +2,48 @@ version: 2
 
 before:
   hooks:
-    - go mod tidy
-    - terraform fmt -recursive ./examples/
-    - go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name sevalla
+  - go mod tidy
+  - terraform fmt -recursive ./examples/
+  - go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name sevalla
 
 builds:
-  - env:
-      - CGO_ENABLED=0
-    mod_timestamp: '{{ .CommitTimestamp }}'
-    flags:
-      - -trimpath
-    ldflags:
-      - '-s -w -X main.version={{.Version}}'
-    goos:
-      - freebsd
-      - windows
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - '386'
-      - arm
-      - arm64
-    ignore:
-      - goos: darwin
-        goarch: '386'
-    binary: '{{ .ProjectName }}_v{{ .Version }}'
+- env:
+  - CGO_ENABLED=0
+  mod_timestamp: '{{ .CommitTimestamp }}'
+  flags:
+  - -trimpath
+  ldflags:
+  - '-s -w -X main.version={{.Version}}'
+  goos:
+  - freebsd
+  - windows
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - '386'
+  - arm
+  - arm64
+  ignore:
+  - goos: darwin
+    goarch: '386'
+  binary: '{{ .ProjectName }}_v{{ .Version }}'
 
 archives:
-  - format: zip
-    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+- format: zip
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
 signs:
-  - artifacts: checksum
-    args:
-      - "--batch"
-      - "--local-user"
-      - "{{ .Env.GPG_FINGERPRINT }}"
-      - "--output"
-      - "${signature}"
-      - "--detach-sign"
-      - "${artifact}"
-
-release:
-  # If you want to manually examine the release before its live, uncomment this line:
-  # draft: true
-  # Whether to disable the changelog generation.
-  # disable: true
-  # Changelog generation implementation to use.
-  # changelog:
-  #   use: github
-  #   sort: asc
-  #   abbrev: 0
-  #   groups:
-  #   - title: Features
-  #     regexp: "^.*feat[(\\w)]*:+.*$"
-  #     order: 0
-  #   - title: 'Bug fixes'
-  #     regexp: "^.*fix[(\\w)]*:+.*$"
-  #     order: 1
-  #   - title: Others
-  #     order: 999
-  #   filters:
-  #     exclude:
-  #     - '^docs:'
-  #     - '^test:'
-  #     - '^ci:'
-  #     - '^refactor:'
-  #     - '^style:'
-  #     - '^chore:'
-  #     - typo
-  #     - Merge pull request
-  #     - Merge branch
-  #     - go mod tidy
+- artifacts: checksum
+  args:
+  - "--batch"
+  - "--local-user"
+  - "{{ .Env.GPG_FINGERPRINT }}"
+  - "--output"
+  - "${signature}"
+  - "--detach-sign"
+  - "${artifact}"
