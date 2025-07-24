@@ -38,12 +38,12 @@ func NewProviderCache() *ProviderCache {
 func (pc *ProviderCache) Get(key string) (interface{}, bool) {
 	pc.mutex.RLock()
 	defer pc.mutex.RUnlock()
-	
+
 	entry, exists := pc.cache[key]
 	if !exists || entry.IsExpired() {
 		return nil, false
 	}
-	
+
 	return entry.Data, true
 }
 
@@ -51,7 +51,7 @@ func (pc *ProviderCache) Get(key string) (interface{}, bool) {
 func (pc *ProviderCache) Set(key string, data interface{}, ttl time.Duration) {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
-	
+
 	pc.cache[key] = &CacheEntry{
 		Data:      data,
 		Timestamp: time.Now(),
@@ -63,7 +63,7 @@ func (pc *ProviderCache) Set(key string, data interface{}, ttl time.Duration) {
 func (pc *ProviderCache) Clear() {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
-	
+
 	pc.cache = make(map[string]*CacheEntry)
 }
 
@@ -71,7 +71,7 @@ func (pc *ProviderCache) Clear() {
 func (pc *ProviderCache) ClearExpired() {
 	pc.mutex.Lock()
 	defer pc.mutex.Unlock()
-	
+
 	for key, entry := range pc.cache {
 		if entry.IsExpired() {
 			delete(pc.cache, key)
@@ -106,10 +106,10 @@ func NewBatchProcessor(batchSize int, batchTime time.Duration) *BatchProcessor {
 		batchSize:  batchSize,
 		batchTime:  batchTime,
 	}
-	
+
 	// Start the batch processor
 	go bp.processBatches()
-	
+
 	return bp
 }
 
@@ -118,7 +118,7 @@ func (bp *BatchProcessor) Submit(op *BatchOperation) {
 	bp.mutex.Lock()
 	bp.results[op.ID] = op
 	bp.mutex.Unlock()
-	
+
 	bp.operations <- op
 }
 
@@ -127,11 +127,11 @@ func (bp *BatchProcessor) Wait(id string) (*BatchOperation, error) {
 	bp.mutex.RLock()
 	op, exists := bp.results[id]
 	bp.mutex.RUnlock()
-	
+
 	if !exists {
 		return nil, nil
 	}
-	
+
 	<-op.Done
 	return op, op.Error
 }
@@ -140,19 +140,19 @@ func (bp *BatchProcessor) Wait(id string) (*BatchOperation, error) {
 func (bp *BatchProcessor) processBatches() {
 	ticker := time.NewTicker(bp.batchTime)
 	defer ticker.Stop()
-	
+
 	batch := make([]*BatchOperation, 0, bp.batchSize)
-	
+
 	for {
 		select {
 		case op := <-bp.operations:
 			batch = append(batch, op)
-			
+
 			if len(batch) >= bp.batchSize {
 				bp.executeBatch(batch)
 				batch = make([]*BatchOperation, 0, bp.batchSize)
 			}
-			
+
 		case <-ticker.C:
 			if len(batch) > 0 {
 				bp.executeBatch(batch)
@@ -166,11 +166,11 @@ func (bp *BatchProcessor) processBatches() {
 func (bp *BatchProcessor) executeBatch(batch []*BatchOperation) {
 	// Group operations by type for more efficient processing
 	operationGroups := make(map[string][]*BatchOperation)
-	
+
 	for _, op := range batch {
 		operationGroups[op.Operation] = append(operationGroups[op.Operation], op)
 	}
-	
+
 	// Execute each group
 	for operationType, ops := range operationGroups {
 		switch operationType {
@@ -257,15 +257,15 @@ func NewRateLimiter(rateLimit int, interval time.Duration) *RateLimiter {
 		rateLimit: rateLimit,
 		interval:  interval,
 	}
-	
+
 	// Fill the token bucket initially
 	for i := 0; i < rateLimit; i++ {
 		rl.tokens <- struct{}{}
 	}
-	
+
 	// Start the token refill process
 	go rl.refillTokens()
-	
+
 	return rl
 }
 
@@ -297,26 +297,26 @@ func (rl *RateLimiter) Stop() {
 
 // PerformanceOptimizedClient wraps the Sevalla API client with performance optimizations.
 type PerformanceOptimizedClient struct {
-	client        *sevallaapi.Client
-	cache         *ProviderCache
+	client         *sevallaapi.Client
+	cache          *ProviderCache
 	batchProcessor *BatchProcessor
-	rateLimiter   *RateLimiter
+	rateLimiter    *RateLimiter
 }
 
 // NewPerformanceOptimizedClient creates a new performance optimized client.
 func NewPerformanceOptimizedClient(client *sevallaapi.Client) *PerformanceOptimizedClient {
 	return &PerformanceOptimizedClient{
-		client:        client,
-		cache:         NewProviderCache(),
+		client:         client,
+		cache:          NewProviderCache(),
 		batchProcessor: NewBatchProcessor(10, 100*time.Millisecond),
-		rateLimiter:   NewRateLimiter(10, 1*time.Second),
+		rateLimiter:    NewRateLimiter(10, 1*time.Second),
 	}
 }
 
 // GetApplicationCached gets an application with caching.
 func (poc *PerformanceOptimizedClient) GetApplicationCached(ctx context.Context, id string) (*sevallaapi.Application, error) {
 	cacheKey := "application:" + id
-	
+
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Application retrieved from cache", map[string]interface{}{"id": id})
@@ -324,29 +324,29 @@ func (poc *PerformanceOptimizedClient) GetApplicationCached(ctx context.Context,
 			return app, nil
 		}
 	}
-	
+
 	// Wait for rate limiter
 	if err := poc.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	// Make API call
 	tflog.Debug(ctx, "Making API call for application", map[string]interface{}{"id": id})
 	app, err := sevallaapi.NewApplicationService(poc.client).Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	poc.cache.Set(cacheKey, app, 5*time.Minute)
-	
+
 	return app, nil
 }
 
 // GetDatabaseCached gets a database with caching.
 func (poc *PerformanceOptimizedClient) GetDatabaseCached(ctx context.Context, id string) (*sevallaapi.Database, error) {
 	cacheKey := "database:" + id
-	
+
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Database retrieved from cache", map[string]interface{}{"id": id})
@@ -354,29 +354,29 @@ func (poc *PerformanceOptimizedClient) GetDatabaseCached(ctx context.Context, id
 			return db, nil
 		}
 	}
-	
+
 	// Wait for rate limiter
 	if err := poc.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	// Make API call
 	tflog.Debug(ctx, "Making API call for database", map[string]interface{}{"id": id})
 	db, err := sevallaapi.NewDatabaseService(poc.client).Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	poc.cache.Set(cacheKey, db, 5*time.Minute)
-	
+
 	return db, nil
 }
 
 // GetStaticSiteCached gets a static site with caching.
 func (poc *PerformanceOptimizedClient) GetStaticSiteCached(ctx context.Context, id string) (*sevallaapi.StaticSite, error) {
 	cacheKey := "static_site:" + id
-	
+
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Static site retrieved from cache", map[string]interface{}{"id": id})
@@ -384,29 +384,29 @@ func (poc *PerformanceOptimizedClient) GetStaticSiteCached(ctx context.Context, 
 			return site, nil
 		}
 	}
-	
+
 	// Wait for rate limiter
 	if err := poc.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	// Make API call
 	tflog.Debug(ctx, "Making API call for static site", map[string]interface{}{"id": id})
 	site, err := sevallaapi.NewStaticSiteService(poc.client).Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	poc.cache.Set(cacheKey, site, 5*time.Minute)
-	
+
 	return site, nil
 }
 
 // GetObjectStorageCached gets object storage with caching.
 func (poc *PerformanceOptimizedClient) GetObjectStorageCached(ctx context.Context, id string) (*sevallaapi.ObjectStorage, error) {
 	cacheKey := "object_storage:" + id
-	
+
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Object storage retrieved from cache", map[string]interface{}{"id": id})
@@ -414,29 +414,29 @@ func (poc *PerformanceOptimizedClient) GetObjectStorageCached(ctx context.Contex
 			return storage, nil
 		}
 	}
-	
+
 	// Wait for rate limiter
 	if err := poc.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	// Make API call
 	tflog.Debug(ctx, "Making API call for object storage", map[string]interface{}{"id": id})
 	storage, err := sevallaapi.NewObjectStorageService(poc.client).Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	poc.cache.Set(cacheKey, storage, 5*time.Minute)
-	
+
 	return storage, nil
 }
 
 // GetPipelineCached gets a pipeline with caching.
 func (poc *PerformanceOptimizedClient) GetPipelineCached(ctx context.Context, id string) (*sevallaapi.Pipeline, error) {
 	cacheKey := "pipeline:" + id
-	
+
 	// Check cache first
 	if cached, found := poc.cache.Get(cacheKey); found {
 		tflog.Debug(ctx, "Pipeline retrieved from cache", map[string]interface{}{"id": id})
@@ -444,22 +444,22 @@ func (poc *PerformanceOptimizedClient) GetPipelineCached(ctx context.Context, id
 			return pipeline, nil
 		}
 	}
-	
+
 	// Wait for rate limiter
 	if err := poc.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	// Make API call
 	tflog.Debug(ctx, "Making API call for pipeline", map[string]interface{}{"id": id})
 	pipeline, err := sevallaapi.NewPipelineService(poc.client).Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	poc.cache.Set(cacheKey, pipeline, 5*time.Minute)
-	
+
 	return pipeline, nil
 }
 
@@ -468,7 +468,7 @@ func (poc *PerformanceOptimizedClient) InvalidateCache(resourceType, id string) 
 	cacheKey := resourceType + ":" + id
 	poc.cache.mutex.Lock()
 	defer poc.cache.mutex.Unlock()
-	
+
 	delete(poc.cache.cache, cacheKey)
 }
 

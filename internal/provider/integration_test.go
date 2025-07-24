@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccIntegrationFullStack tests a full-stack application with all resources
+// TestAccIntegrationFullStack tests a full-stack application with all resources.
 func TestAccIntegrationFullStack(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -23,7 +23,7 @@ func TestAccIntegrationFullStack(t *testing.T) {
 					resource.TestCheckResourceAttrSet("sevalla_application.web_app", "id"),
 					resource.TestCheckResourceAttrSet("sevalla_application.web_app", "domain"),
 					resource.TestCheckResourceAttrSet("sevalla_application.web_app", "status"),
-					
+
 					// Database checks
 					resource.TestCheckResourceAttr("sevalla_database.app_db", "name", "fullstack-postgres"),
 					resource.TestCheckResourceAttr("sevalla_database.app_db", "type", "postgresql"),
@@ -33,14 +33,14 @@ func TestAccIntegrationFullStack(t *testing.T) {
 					resource.TestCheckResourceAttrSet("sevalla_database.app_db", "host"),
 					resource.TestCheckResourceAttrSet("sevalla_database.app_db", "port"),
 					resource.TestCheckResourceAttrSet("sevalla_database.app_db", "username"),
-					
+
 					// Cache database checks
 					resource.TestCheckResourceAttr("sevalla_database.app_cache", "name", "fullstack-redis"),
 					resource.TestCheckResourceAttr("sevalla_database.app_cache", "type", "redis"),
 					resource.TestCheckResourceAttr("sevalla_database.app_cache", "version", "7"),
 					resource.TestCheckResourceAttr("sevalla_database.app_cache", "size", "small"),
 					resource.TestCheckResourceAttrSet("sevalla_database.app_cache", "id"),
-					
+
 					// Static site checks
 					resource.TestCheckResourceAttr("sevalla_static_site.frontend", "name", "fullstack-frontend"),
 					resource.TestCheckResourceAttr("sevalla_static_site.frontend", "branch", "main"),
@@ -48,7 +48,7 @@ func TestAccIntegrationFullStack(t *testing.T) {
 					resource.TestCheckResourceAttr("sevalla_static_site.frontend", "build_cmd", "npm run build"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.frontend", "id"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.frontend", "domain"),
-					
+
 					// Object storage checks
 					resource.TestCheckResourceAttr("sevalla_object_storage.app_storage", "name", "fullstack-storage"),
 					resource.TestCheckResourceAttr("sevalla_object_storage.app_storage", "region", "us-east-1"),
@@ -56,7 +56,7 @@ func TestAccIntegrationFullStack(t *testing.T) {
 					resource.TestCheckResourceAttrSet("sevalla_object_storage.app_storage", "endpoint"),
 					resource.TestCheckResourceAttrSet("sevalla_object_storage.app_storage", "access_key"),
 					resource.TestCheckResourceAttrSet("sevalla_object_storage.app_storage", "secret_key"),
-					
+
 					// Pipeline checks
 					resource.TestCheckResourceAttr("sevalla_pipeline.app_pipeline", "name", "fullstack-pipeline"),
 					resource.TestCheckResourceAttr("sevalla_pipeline.app_pipeline", "branch", "main"),
@@ -70,7 +70,7 @@ func TestAccIntegrationFullStack(t *testing.T) {
 	})
 }
 
-// TestAccIntegrationAppWithDatabase tests an application with a database
+// TestAccIntegrationAppWithDatabase tests an application with a database.
 func TestAccIntegrationAppWithDatabase(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -85,7 +85,7 @@ func TestAccIntegrationAppWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttr("sevalla_application.api_app", "memory", "512"),
 					resource.TestCheckResourceAttr("sevalla_application.api_app", "cpu", "250"),
 					resource.TestCheckResourceAttrSet("sevalla_application.api_app", "id"),
-					
+
 					// Database checks
 					resource.TestCheckResourceAttr("sevalla_database.api_db", "name", "api-postgres"),
 					resource.TestCheckResourceAttr("sevalla_database.api_db", "type", "postgresql"),
@@ -95,7 +95,7 @@ func TestAccIntegrationAppWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttrSet("sevalla_database.api_db", "host"),
 					resource.TestCheckResourceAttrSet("sevalla_database.api_db", "port"),
 					resource.TestCheckResourceAttrSet("sevalla_database.api_db", "username"),
-					
+
 					// Check that environment variables are set correctly
 					resource.TestCheckResourceAttr("sevalla_application.api_app", "environment.NODE_ENV", "production"),
 					resource.TestCheckResourceAttr("sevalla_application.api_app", "environment.PORT", "3000"),
@@ -107,7 +107,7 @@ func TestAccIntegrationAppWithDatabase(t *testing.T) {
 	})
 }
 
-// TestAccIntegrationMultiEnvironment tests multiple environments (dev, staging, prod)
+// TestAccIntegrationMultiEnvironment tests multiple environments (dev, staging, prod).
 func TestAccIntegrationMultiEnvironment(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -123,7 +123,7 @@ func TestAccIntegrationMultiEnvironment(t *testing.T) {
 					resource.TestCheckResourceAttr("sevalla_application.dev_app", "environment.ENVIRONMENT", "development"),
 					resource.TestCheckResourceAttr("sevalla_application.dev_app", "environment.LOG_LEVEL", "debug"),
 					resource.TestCheckResourceAttrSet("sevalla_application.dev_app", "id"),
-					
+
 					// Staging environment
 					resource.TestCheckResourceAttr("sevalla_application.staging_app", "name", "myapp-staging"),
 					resource.TestCheckResourceAttr("sevalla_application.staging_app", "instances", "2"),
@@ -131,15 +131,16 @@ func TestAccIntegrationMultiEnvironment(t *testing.T) {
 					resource.TestCheckResourceAttr("sevalla_application.staging_app", "environment.ENVIRONMENT", "staging"),
 					resource.TestCheckResourceAttr("sevalla_application.staging_app", "environment.LOG_LEVEL", "info"),
 					resource.TestCheckResourceAttrSet("sevalla_application.staging_app", "id"),
-					
+
 					// Production environment
 					resource.TestCheckResourceAttr("sevalla_application.prod_app", "name", "myapp-production"),
 					resource.TestCheckResourceAttr("sevalla_application.prod_app", "instances", "3"),
 					resource.TestCheckResourceAttr("sevalla_application.prod_app", "memory", "2048"),
-					resource.TestCheckResourceAttr("sevalla_application.prod_app", "environment.ENVIRONMENT", "production"),
+					resource.TestCheckResourceAttr("sevalla_application.prod_app",
+						"environment.ENVIRONMENT", "production"),
 					resource.TestCheckResourceAttr("sevalla_application.prod_app", "environment.LOG_LEVEL", "info"),
 					resource.TestCheckResourceAttrSet("sevalla_application.prod_app", "id"),
-					
+
 					// Database checks for each environment
 					resource.TestCheckResourceAttr("sevalla_database.dev_db", "name", "myapp-dev-db"),
 					resource.TestCheckResourceAttr("sevalla_database.dev_db", "size", "small"),
@@ -153,7 +154,7 @@ func TestAccIntegrationMultiEnvironment(t *testing.T) {
 	})
 }
 
-// TestAccIntegrationDataSourcesWithResources tests data sources with actual resources
+// TestAccIntegrationDataSourcesWithResources tests data sources with actual resources.
 func TestAccIntegrationDataSourcesWithResources(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -168,30 +169,44 @@ func TestAccIntegrationDataSourcesWithResources(t *testing.T) {
 					resource.TestCheckResourceAttr("sevalla_static_site.ds_site", "name", "datasource-site"),
 					resource.TestCheckResourceAttr("sevalla_object_storage.ds_storage", "name", "datasource-storage"),
 					resource.TestCheckResourceAttr("sevalla_pipeline.ds_pipeline", "name", "datasource-pipeline"),
-					
+
 					// Data source checks - should match resource attributes
-					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "id", "data.sevalla_application.ds_app", "id"),
-					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "name", "data.sevalla_application.ds_app", "name"),
-					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "status", "data.sevalla_application.ds_app", "status"),
-					
+					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "id",
+						"data.sevalla_application.ds_app", "id"),
+					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "name",
+						"data.sevalla_application.ds_app", "name"),
+					resource.TestCheckResourceAttrPair("sevalla_application.ds_app", "status",
+						"data.sevalla_application.ds_app", "status"),
+
 					resource.TestCheckResourceAttrPair("sevalla_database.ds_db", "id", "data.sevalla_database.ds_db", "id"),
 					resource.TestCheckResourceAttrPair("sevalla_database.ds_db", "name", "data.sevalla_database.ds_db", "name"),
 					resource.TestCheckResourceAttrPair("sevalla_database.ds_db", "type", "data.sevalla_database.ds_db", "type"),
 					resource.TestCheckResourceAttrPair("sevalla_database.ds_db", "host", "data.sevalla_database.ds_db", "host"),
-					
-					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "id", "data.sevalla_static_site.ds_site", "id"),
-					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "name", "data.sevalla_static_site.ds_site", "name"),
-					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "domain", "data.sevalla_static_site.ds_site", "domain"),
-					
-					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "id", "data.sevalla_object_storage.ds_storage", "id"),
-					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "name", "data.sevalla_object_storage.ds_storage", "name"),
-					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "endpoint", "data.sevalla_object_storage.ds_storage", "endpoint"),
-					
-					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "id", "data.sevalla_pipeline.ds_pipeline", "id"),
-					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "name", "data.sevalla_pipeline.ds_pipeline", "name"),
-					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "app_id", "data.sevalla_pipeline.ds_pipeline", "app_id"),
-					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "branch", "data.sevalla_pipeline.ds_pipeline", "branch"),
-					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "auto_deploy", "data.sevalla_pipeline.ds_pipeline", "auto_deploy"),
+
+					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "id",
+						"data.sevalla_static_site.ds_site", "id"),
+					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "name",
+						"data.sevalla_static_site.ds_site", "name"),
+					resource.TestCheckResourceAttrPair("sevalla_static_site.ds_site", "domain",
+						"data.sevalla_static_site.ds_site", "domain"),
+
+					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "id",
+						"data.sevalla_object_storage.ds_storage", "id"),
+					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "name",
+						"data.sevalla_object_storage.ds_storage", "name"),
+					resource.TestCheckResourceAttrPair("sevalla_object_storage.ds_storage", "endpoint",
+						"data.sevalla_object_storage.ds_storage", "endpoint"),
+
+					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "id",
+						"data.sevalla_pipeline.ds_pipeline", "id"),
+					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "name",
+						"data.sevalla_pipeline.ds_pipeline", "name"),
+					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "app_id",
+						"data.sevalla_pipeline.ds_pipeline", "app_id"),
+					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "branch",
+						"data.sevalla_pipeline.ds_pipeline", "branch"),
+					resource.TestCheckResourceAttrPair("sevalla_pipeline.ds_pipeline", "auto_deploy",
+						"data.sevalla_pipeline.ds_pipeline", "auto_deploy"),
 				),
 			},
 		},

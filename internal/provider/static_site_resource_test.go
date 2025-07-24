@@ -93,20 +93,3 @@ resource "sevalla_static_site" "test" {
 }
 `, name)
 }
-
-func testAccStaticSiteResourceConfigUpdated(name string) string {
-	return providerConfig + fmt.Sprintf(`
-resource "sevalla_static_site" "test" {
-  name      = %[1]q
-  branch    = "main"
-  build_dir = "public"
-  build_cmd = "npm run build"
-  
-  repository {
-    url    = "https://github.com/test/test-site-updated"
-    type   = "github"
-    branch = "main"
-  }
-}
-`, name)
-}
