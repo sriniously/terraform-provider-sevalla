@@ -16,16 +16,19 @@ func TestAccStaticSiteResource(t *testing.T) {
 			{
 				Config: testAccStaticSiteResourceConfig("test-site"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "name", "test-site"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "branch", "main"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "build_dir", "dist"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "build_cmd", "npm run build"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "repository.url", "https://github.com/test/test-site"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "repository.type", "github"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "repository.branch", "main"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "display_name", "test-site"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "company_id", testAccCompanyID()),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "repo_url", "https://github.com/test/test-site"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "default_branch", "main"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "auto_deploy", "true"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "build_command", "npm run build"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "published_directory", "dist"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "node_version", "18.16.0"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "id"),
-					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "domain"),
+					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "name"),
+					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "hostname"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "status"),
+					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "git_type"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "created_at"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "updated_at"),
 				),
@@ -40,8 +43,7 @@ func TestAccStaticSiteResource(t *testing.T) {
 			{
 				Config: testAccStaticSiteResourceConfig("test-site-updated"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "name", "test-site-updated"),
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "build_dir", "public"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "display_name", "test-site-updated"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -58,7 +60,7 @@ func TestAccStaticSiteResourceMinimal(t *testing.T) {
 			{
 				Config: testAccStaticSiteResourceConfigMinimal("minimal-site"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("sevalla_static_site.test", "name", "minimal-site"),
+					resource.TestCheckResourceAttr("sevalla_static_site.test", "display_name", "minimal-site"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "id"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "status"),
 					resource.TestCheckResourceAttrSet("sevalla_static_site.test", "created_at"),
@@ -72,24 +74,24 @@ func TestAccStaticSiteResourceMinimal(t *testing.T) {
 func testAccStaticSiteResourceConfig(name string) string {
 	return providerConfig + fmt.Sprintf(`
 resource "sevalla_static_site" "test" {
-  name      = %[1]q
-  branch    = "main"
-  build_dir = "dist"
-  build_cmd = "npm run build"
-  
-  repository {
-    url    = "https://github.com/test/test-site"
-    type   = "github"
-    branch = "main"
-  }
+  display_name        = %[1]q
+  company_id          = %[2]q
+  repo_url            = "https://github.com/test/test-site"
+  default_branch      = "main"
+  auto_deploy         = true
+  build_command       = "npm run build"
+  published_directory = "dist"
+  node_version        = "18.16.0"
 }
-`, name)
+`, name, testAccCompanyID())
 }
 
 func testAccStaticSiteResourceConfigMinimal(name string) string {
 	return providerConfig + fmt.Sprintf(`
 resource "sevalla_static_site" "test" {
-  name = %[1]q
+  display_name = %[1]q
+  company_id   = %[2]q
+  repo_url     = "https://github.com/test/minimal-site"
 }
-`, name)
+`, name, testAccCompanyID())
 }

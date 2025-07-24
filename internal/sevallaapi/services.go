@@ -3,6 +3,7 @@ package sevallaapi
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // ApplicationService handles application-related API operations.
@@ -15,10 +16,11 @@ func NewApplicationService(client *Client) *ApplicationService {
 	return &ApplicationService{client: client}
 }
 
-func (s *ApplicationService) List(ctx context.Context) ([]Application, error) {
-	var apps []Application
-	err := s.client.Get(ctx, "/applications", &apps)
-	return apps, err
+func (s *ApplicationService) List(ctx context.Context, companyID string) ([]ApplicationListItem, error) {
+	var response ApplicationListResponse
+	url := fmt.Sprintf("/applications?company=%s", companyID)
+	err := s.client.Get(ctx, url, &response)
+	return response.Company.Apps.Items, err
 }
 
 func (s *ApplicationService) Get(ctx context.Context, id string) (*Application, error) {
@@ -57,28 +59,67 @@ func NewDatabaseService(client *Client) *DatabaseService {
 	return &DatabaseService{client: client}
 }
 
-func (s *DatabaseService) List(ctx context.Context) ([]Database, error) {
-	var dbs []Database
-	err := s.client.Get(ctx, "/databases", &dbs)
-	return dbs, err
+func (s *DatabaseService) List(ctx context.Context, companyID string) ([]DatabaseListItem, error) {
+	var response DatabaseListResponse
+	url := fmt.Sprintf("/databases?company=%s", companyID)
+	err := s.client.Get(ctx, url, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response.Company.Databases.Items, nil
 }
 
 func (s *DatabaseService) Get(ctx context.Context, id string) (*Database, error) {
 	var db Database
-	err := s.client.Get(ctx, fmt.Sprintf("/databases/%s", id), &db)
+	// Based on OpenAPI spec, the database GET endpoint requires internal and external query parameters
+	url := fmt.Sprintf("/databases/%s?internal=true&external=true", id)
+	err := s.client.Get(ctx, url, &db)
 	return &db, err
 }
 
 func (s *DatabaseService) Create(ctx context.Context, req CreateDatabaseRequest) (*Database, error) {
-	var db Database
-	err := s.client.Post(ctx, "/databases", req, &db)
-	return &db, err
+	// The create endpoint only returns the database ID
+	var createResp struct {
+		Database struct {
+			ID string `json:"id"`
+		} `json:"database"`
+	}
+	err := s.client.Post(ctx, "/databases", req, &createResp)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Retry getting the database details up to 3 times with a short delay
+	// as the database might not be immediately available after creation
+	var db *Database
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			time.Sleep(time.Second)
+		}
+		db, err = s.Get(ctx, createResp.Database.ID)
+		if err == nil {
+			break
+		}
+	}
+	
+	return db, err
 }
 
 func (s *DatabaseService) Update(ctx context.Context, id string, req UpdateDatabaseRequest) (*Database, error) {
-	var db Database
-	err := s.client.Put(ctx, fmt.Sprintf("/databases/%s", id), req, &db)
-	return &db, err
+	// The update endpoint returns limited information
+	var updateResp struct {
+		Database struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"display_name"`
+			Status      string `json:"status"`
+		} `json:"database"`
+	}
+	err := s.client.Put(ctx, fmt.Sprintf("/databases/%s", id), req, &updateResp)
+	if err != nil {
+		return nil, err
+	}
+	// Fetch the full database details
+	return s.Get(ctx, id)
 }
 
 func (s *DatabaseService) Delete(ctx context.Context, id string) error {
@@ -95,10 +136,14 @@ func NewStaticSiteService(client *Client) *StaticSiteService {
 	return &StaticSiteService{client: client}
 }
 
-func (s *StaticSiteService) List(ctx context.Context) ([]StaticSite, error) {
-	var sites []StaticSite
-	err := s.client.Get(ctx, "/static-sites", &sites)
-	return sites, err
+func (s *StaticSiteService) List(ctx context.Context, companyID string) ([]StaticSiteListItem, error) {
+	var response StaticSiteListResponse
+	url := fmt.Sprintf("/static-sites?company=%s", companyID)
+	err := s.client.Get(ctx, url, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response.Company.StaticSites.Items, nil
 }
 
 func (s *StaticSiteService) Get(ctx context.Context, id string) (*StaticSite, error) {
@@ -123,48 +168,6 @@ func (s *StaticSiteService) Delete(ctx context.Context, id string) error {
 	return s.client.Delete(ctx, fmt.Sprintf("/static-sites/%s", id))
 }
 
-// ObjectStorageService handles object storage-related API operations.
-type ObjectStorageService struct {
-	client *Client
-}
-
-// NewObjectStorageService creates a new ObjectStorageService instance with the provided client.
-func NewObjectStorageService(client *Client) *ObjectStorageService {
-	return &ObjectStorageService{client: client}
-}
-
-func (s *ObjectStorageService) List(ctx context.Context) ([]ObjectStorage, error) {
-	var buckets []ObjectStorage
-	err := s.client.Get(ctx, "/object-storage", &buckets)
-	return buckets, err
-}
-
-func (s *ObjectStorageService) Get(ctx context.Context, id string) (*ObjectStorage, error) {
-	var bucket ObjectStorage
-	err := s.client.Get(ctx, fmt.Sprintf("/object-storage/%s", id), &bucket)
-	return &bucket, err
-}
-
-func (s *ObjectStorageService) Create(ctx context.Context, req CreateObjectStorageRequest) (*ObjectStorage, error) {
-	var bucket ObjectStorage
-	err := s.client.Post(ctx, "/object-storage", req, &bucket)
-	return &bucket, err
-}
-
-func (s *ObjectStorageService) Update(
-	ctx context.Context,
-	id string,
-	req UpdateObjectStorageRequest,
-) (*ObjectStorage, error) {
-	var bucket ObjectStorage
-	err := s.client.Put(ctx, fmt.Sprintf("/object-storage/%s", id), req, &bucket)
-	return &bucket, err
-}
-
-func (s *ObjectStorageService) Delete(ctx context.Context, id string) error {
-	return s.client.Delete(ctx, fmt.Sprintf("/object-storage/%s", id))
-}
-
 // PipelineService handles pipeline-related API operations.
 type PipelineService struct {
 	client *Client
@@ -175,9 +178,10 @@ func NewPipelineService(client *Client) *PipelineService {
 	return &PipelineService{client: client}
 }
 
-func (s *PipelineService) List(ctx context.Context) ([]Pipeline, error) {
+func (s *PipelineService) List(ctx context.Context, companyID string) ([]Pipeline, error) {
 	var pipelines []Pipeline
-	err := s.client.Get(ctx, "/pipelines", &pipelines)
+	url := fmt.Sprintf("/pipelines?company=%s", companyID)
+	err := s.client.Get(ctx, url, &pipelines)
 	return pipelines, err
 }
 
@@ -223,4 +227,78 @@ func (s *DeploymentService) Get(ctx context.Context, appID, deploymentID string)
 	var deployment Deployment
 	err := s.client.Get(ctx, fmt.Sprintf("/applications/%s/deployments/%s", appID, deploymentID), &deployment)
 	return &deployment, err
+}
+
+// SiteService handles WordPress site-related API operations.
+type SiteService struct {
+	client *Client
+}
+
+// NewSiteService creates a new SiteService instance with the provided client.
+func NewSiteService(client *Client) *SiteService {
+	return &SiteService{client: client}
+}
+
+func (s *SiteService) List(ctx context.Context, companyID string) ([]SiteListItem, error) {
+	var response SiteListResponse
+	url := fmt.Sprintf("/sites?company=%s", companyID)
+	err := s.client.Get(ctx, url, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response.Company.Sites, nil
+}
+
+func (s *SiteService) Get(ctx context.Context, id string) (*Site, error) {
+	var site Site
+	err := s.client.Get(ctx, fmt.Sprintf("/sites/%s", id), &site)
+	return &site, err
+}
+
+func (s *SiteService) Create(ctx context.Context, req CreateSiteRequest) (*OperationResponse, error) {
+	var opResp OperationResponse
+	err := s.client.Post(ctx, "/sites", req, &opResp)
+	return &opResp, err
+}
+
+func (s *SiteService) Update(ctx context.Context, id string, req UpdateSiteRequest) (*Site, error) {
+	var site Site
+	err := s.client.Put(ctx, fmt.Sprintf("/sites/%s", id), req, &site)
+	return &site, err
+}
+
+func (s *SiteService) Delete(ctx context.Context, id string) error {
+	return s.client.Delete(ctx, fmt.Sprintf("/sites/%s", id))
+}
+
+// CompanyService handles company-related API operations.
+type CompanyService struct {
+	client *Client
+}
+
+// NewCompanyService creates a new CompanyService instance with the provided client.
+func NewCompanyService(client *Client) *CompanyService {
+	return &CompanyService{client: client}
+}
+
+func (s *CompanyService) GetUsers(ctx context.Context, companyID string) (*CompanyUsers, error) {
+	var users CompanyUsers
+	err := s.client.Get(ctx, fmt.Sprintf("/company/%s/users", companyID), &users)
+	return &users, err
+}
+
+// OperationService handles operation-related API operations.
+type OperationService struct {
+	client *Client
+}
+
+// NewOperationService creates a new OperationService instance with the provided client.
+func NewOperationService(client *Client) *OperationService {
+	return &OperationService{client: client}
+}
+
+func (s *OperationService) GetStatus(ctx context.Context, operationID string) (*Operation, error) {
+	var op Operation
+	err := s.client.Get(ctx, fmt.Sprintf("/operations/%s", operationID), &op)
+	return &op, err
 }

@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sriniously/terraform-provider-sevalla/internal/sevallaapi"
 )
 
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &StaticSiteResource{}
 var _ resource.ResourceWithImportState = &StaticSiteResource{}
 
@@ -23,117 +24,114 @@ func NewStaticSiteResource() resource.Resource {
 	return &StaticSiteResource{}
 }
 
+// StaticSiteResource defines the resource implementation.
 type StaticSiteResource struct {
 	client *sevallaapi.Client
 }
 
+// StaticSiteResourceModel describes the resource data model.
 type StaticSiteResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
-	Domain     types.String `tfsdk:"domain"`
-	Repository types.Object `tfsdk:"repository"`
-	Branch     types.String `tfsdk:"branch"`
-	BuildDir   types.String `tfsdk:"build_dir"`
-	BuildCmd   types.String `tfsdk:"build_cmd"`
-	Status     types.String `tfsdk:"status"`
-	CreatedAt  types.String `tfsdk:"created_at"`
-	UpdatedAt  types.String `tfsdk:"updated_at"`
+	ID                 types.String `tfsdk:"id"`
+	Name               types.String `tfsdk:"name"`
+	DisplayName        types.String `tfsdk:"display_name"`
+	CompanyID          types.String `tfsdk:"company_id"`
+	Status             types.String `tfsdk:"status"`
+	RepoURL            types.String `tfsdk:"repo_url"`
+	DefaultBranch      types.String `tfsdk:"default_branch"`
+	AutoDeploy         types.Bool   `tfsdk:"auto_deploy"`
+	GitType            types.String `tfsdk:"git_type"`
+	Hostname           types.String `tfsdk:"hostname"`
+	BuildCommand       types.String `tfsdk:"build_command"`
+	NodeVersion        types.String `tfsdk:"node_version"`
+	PublishedDirectory types.String `tfsdk:"published_directory"`
 }
 
-func (r *StaticSiteResource) Metadata(
-	ctx context.Context,
-	req resource.MetadataRequest,
-	resp *resource.MetadataResponse,
-) {
+func (r *StaticSiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_static_site"
 }
 
 func (r *StaticSiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages a Sevalla static site.",
+		MarkdownDescription: "Manages a static site on Sevalla platform.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Static site identifier",
+				MarkdownDescription: "The unique identifier of the static site.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "Static site name",
+				Computed:            true,
+				MarkdownDescription: "The unique name of the static site.",
+			},
+			"display_name": schema.StringAttribute{
 				Required:            true,
+				MarkdownDescription: "The display name of the static site.",
 			},
-			"domain": schema.StringAttribute{
-				MarkdownDescription: "Custom domain for the static site",
-				Optional:            true,
+			"company_id": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The company ID that owns this static site.",
 			},
-			"repository": schema.SingleNestedAttribute{
-				MarkdownDescription: "Source code repository configuration",
+			"repo_url": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The repository URL for the static site.",
+			},
+			"default_branch": schema.StringAttribute{
 				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						MarkdownDescription: "Repository URL",
-						Required:            true,
-					},
-					"type": schema.StringAttribute{
-						MarkdownDescription: "Repository type (github, gitlab, bitbucket)",
-						Required:            true,
-					},
-					"branch": schema.StringAttribute{
-						MarkdownDescription: "Repository branch",
-						Optional:            true,
-					},
+				MarkdownDescription: "The default branch to deploy from.",
+			},
+			"auto_deploy": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to automatically deploy on git push.",
+			},
+			"build_command": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The build command to run.",
+			},
+			"node_version": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The Node.js version to use (16.20.0, 18.16.0, 20.2.0).",
+				Validators: []validator.String{
+					stringvalidator.OneOf("16.20.0", "18.16.0", "20.2.0"),
 				},
 			},
-			"branch": schema.StringAttribute{
-				MarkdownDescription: "Git branch to deploy",
+			"published_directory": schema.StringAttribute{
 				Optional:            true,
-			},
-			"build_dir": schema.StringAttribute{
-				MarkdownDescription: "Build output directory",
-				Optional:            true,
-			},
-			"build_cmd": schema.StringAttribute{
-				MarkdownDescription: "Build command to run",
-				Optional:            true,
+				MarkdownDescription: "The directory containing the built static files.",
 			},
 			"status": schema.StringAttribute{
-				MarkdownDescription: "Static site status",
 				Computed:            true,
+				MarkdownDescription: "The current status of the static site.",
 			},
-			"created_at": schema.StringAttribute{
-				MarkdownDescription: "Creation timestamp",
+			"git_type": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The git provider type (github, gitlab, etc.).",
 			},
-			"updated_at": schema.StringAttribute{
-				MarkdownDescription: "Last update timestamp",
+			"hostname": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The hostname where the static site is deployed.",
 			},
 		},
 	}
 }
 
-func (r *StaticSiteResource) Configure(
-	ctx context.Context,
-	req resource.ConfigureRequest,
-	resp *resource.ConfigureResponse,
-) {
+func (r *StaticSiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(SevallaProviderData)
+	data, ok := req.ProviderData.(SevallaProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
-				"Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
 
-	r.client = client.Client
+	r.client = data.Client
 }
 
 func (r *StaticSiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -145,47 +143,43 @@ func (r *StaticSiteResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createReq := sevallaapi.CreateStaticSiteRequest{
-		Name: data.Name.ValueString(),
+		CompanyID:   data.CompanyID.ValueString(),
+		DisplayName: data.DisplayName.ValueString(),
+		RepoURL:     data.RepoURL.ValueString(),
 	}
 
-	if !data.Branch.IsNull() {
-		createReq.Branch = data.Branch.ValueString()
+	if !data.DefaultBranch.IsNull() {
+		branch := data.DefaultBranch.ValueString()
+		createReq.Branch = &branch
 	}
 
-	if !data.BuildDir.IsNull() {
-		createReq.BuildDir = data.BuildDir.ValueString()
-	}
+	tflog.Debug(ctx, "Creating static site", map[string]interface{}{
+		"company_id":   createReq.CompanyID,
+		"display_name": createReq.DisplayName,
+		"repo_url":     createReq.RepoURL,
+	})
 
-	if !data.BuildCmd.IsNull() {
-		createReq.BuildCmd = data.BuildCmd.ValueString()
-	}
-
-	// Handle repository
-	if !data.Repository.IsNull() {
-		var repo RepositoryModel
-		resp.Diagnostics.Append(data.Repository.As(ctx, &repo, basetypes.ObjectAsOptions{})...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		createReq.Repository = &sevallaapi.Repository{
-			URL:    repo.URL.ValueString(),
-			Type:   repo.Type.ValueString(),
-			Branch: repo.Branch.ValueString(),
-		}
-	}
-
-	tflog.Trace(ctx, "creating static site")
-
-	site, err := sevallaapi.NewStaticSiteService(r.client).Create(ctx, createReq)
+	site, err := r.client.StaticSites.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create static site, got error: %s", err))
 		return
 	}
 
-	r.updateModelFromAPI(ctx, &data, site)
+	data.ID = types.StringValue(site.StaticSite.ID)
+	data.Name = types.StringValue(site.StaticSite.Name)
+	data.DisplayName = types.StringValue(site.StaticSite.DisplayName)
+	data.Status = types.StringValue(site.StaticSite.Status)
+	data.RepoURL = types.StringValue(site.StaticSite.RepoURL)
+	data.DefaultBranch = types.StringValue(site.StaticSite.DefaultBranch)
+	data.AutoDeploy = types.BoolValue(site.StaticSite.AutoDeploy)
+	data.GitType = types.StringValue(site.StaticSite.GitType)
+	data.Hostname = types.StringValue(site.StaticSite.Hostname)
 
-	tflog.Trace(ctx, "created static site")
+	if site.StaticSite.BuildCommand != nil {
+		data.BuildCommand = types.StringValue(*site.StaticSite.BuildCommand)
+	}
+
+	tflog.Trace(ctx, "Created static site resource")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -198,13 +192,25 @@ func (r *StaticSiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	site, err := sevallaapi.NewStaticSiteService(r.client).Get(ctx, data.ID.ValueString())
+	site, err := r.client.StaticSites.Get(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read static site, got error: %s", err))
 		return
 	}
 
-	r.updateModelFromAPI(ctx, &data, site)
+	data.ID = types.StringValue(site.StaticSite.ID)
+	data.Name = types.StringValue(site.StaticSite.Name)
+	data.DisplayName = types.StringValue(site.StaticSite.DisplayName)
+	data.Status = types.StringValue(site.StaticSite.Status)
+	data.RepoURL = types.StringValue(site.StaticSite.RepoURL)
+	data.DefaultBranch = types.StringValue(site.StaticSite.DefaultBranch)
+	data.AutoDeploy = types.BoolValue(site.StaticSite.AutoDeploy)
+	data.GitType = types.StringValue(site.StaticSite.GitType)
+	data.Hostname = types.StringValue(site.StaticSite.Hostname)
+
+	if site.StaticSite.BuildCommand != nil {
+		data.BuildCommand = types.StringValue(*site.StaticSite.BuildCommand)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -219,48 +225,43 @@ func (r *StaticSiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	updateReq := sevallaapi.UpdateStaticSiteRequest{}
 
-	if !data.Name.IsNull() {
-		name := data.Name.ValueString()
-		updateReq.Name = &name
+	if !data.DisplayName.IsNull() {
+		updateReq.DisplayName = stringPointer(data.DisplayName.ValueString())
 	}
 
-	if !data.Branch.IsNull() {
-		branch := data.Branch.ValueString()
-		updateReq.Branch = &branch
+	if !data.AutoDeploy.IsNull() {
+		autoDeploy := data.AutoDeploy.ValueBool()
+		updateReq.AutoDeploy = &autoDeploy
 	}
 
-	if !data.BuildDir.IsNull() {
-		buildDir := data.BuildDir.ValueString()
-		updateReq.BuildDir = &buildDir
+	if !data.DefaultBranch.IsNull() {
+		updateReq.DefaultBranch = stringPointer(data.DefaultBranch.ValueString())
 	}
 
-	if !data.BuildCmd.IsNull() {
-		buildCmd := data.BuildCmd.ValueString()
-		updateReq.BuildCmd = &buildCmd
+	if !data.BuildCommand.IsNull() {
+		updateReq.BuildCommand = stringPointer(data.BuildCommand.ValueString())
 	}
 
-	// Handle repository
-	if !data.Repository.IsNull() {
-		var repo RepositoryModel
-		resp.Diagnostics.Append(data.Repository.As(ctx, &repo, basetypes.ObjectAsOptions{})...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		updateReq.Repository = &sevallaapi.Repository{
-			URL:    repo.URL.ValueString(),
-			Type:   repo.Type.ValueString(),
-			Branch: repo.Branch.ValueString(),
-		}
+	if !data.NodeVersion.IsNull() {
+		updateReq.NodeVersion = stringPointer(data.NodeVersion.ValueString())
 	}
 
-	site, err := sevallaapi.NewStaticSiteService(r.client).Update(ctx, data.ID.ValueString(), updateReq)
+	if !data.PublishedDirectory.IsNull() {
+		updateReq.PublishedDirectory = stringPointer(data.PublishedDirectory.ValueString())
+	}
+
+	site, err := r.client.StaticSites.Update(ctx, data.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update static site, got error: %s", err))
 		return
 	}
 
-	r.updateModelFromAPI(ctx, &data, site)
+	data.ID = types.StringValue(site.StaticSite.ID)
+	data.Name = types.StringValue(site.StaticSite.Name)
+	data.DisplayName = types.StringValue(site.StaticSite.DisplayName)
+	data.Status = types.StringValue(site.StaticSite.Status)
+	data.AutoDeploy = types.BoolValue(site.StaticSite.AutoDeploy)
+	data.DefaultBranch = types.StringValue(site.StaticSite.DefaultBranch)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -273,50 +274,13 @@ func (r *StaticSiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	err := sevallaapi.NewStaticSiteService(r.client).Delete(ctx, data.ID.ValueString())
+	err := r.client.StaticSites.Delete(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete static site, got error: %s", err))
 		return
 	}
 }
 
-func (r *StaticSiteResource) ImportState(
-	ctx context.Context,
-	req resource.ImportStateRequest,
-	resp *resource.ImportStateResponse,
-) {
+func (r *StaticSiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func (r *StaticSiteResource) updateModelFromAPI(
-	_ context.Context,
-	data *StaticSiteResourceModel,
-	site *sevallaapi.StaticSite,
-) {
-	data.ID = types.StringValue(site.ID)
-	data.Name = types.StringValue(site.Name)
-	data.Domain = types.StringValue(site.Domain)
-	data.Branch = types.StringValue(site.Branch)
-	data.BuildDir = types.StringValue(site.BuildDir)
-	data.BuildCmd = types.StringValue(site.BuildCmd)
-	data.Status = types.StringValue(site.Status)
-	data.CreatedAt = types.StringValue(site.CreatedAt.Format("2006-01-02T15:04:05Z"))
-	data.UpdatedAt = types.StringValue(site.UpdatedAt.Format("2006-01-02T15:04:05Z"))
-
-	if site.Repository != nil {
-		repoObj := map[string]attr.Value{
-			"url":    types.StringValue(site.Repository.URL),
-			"type":   types.StringValue(site.Repository.Type),
-			"branch": types.StringValue(site.Repository.Branch),
-		}
-		objValue, _ := types.ObjectValue(
-			map[string]attr.Type{
-				"url":    types.StringType,
-				"type":   types.StringType,
-				"branch": types.StringType,
-			},
-			repoObj,
-		)
-		data.Repository = objValue
-	}
 }

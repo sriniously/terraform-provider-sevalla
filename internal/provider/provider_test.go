@@ -13,8 +13,8 @@ const (
 	// test configuration so the Sevalla client is properly configured.
 	providerConfig = `
 provider "sevalla" {
-  token = "test-token"
-  base_url = "https://api.sevalla.com"
+  # token and base_url will be read from environment variables:
+  # SEVALLA_TOKEN and SEVALLA_BASE_URL (if set)
 }
 `
 )
@@ -40,4 +40,13 @@ func testAccPreCheck(t *testing.T) {
 	if os.Getenv("SEVALLA_TOKEN") == "" {
 		t.Skip("SEVALLA_TOKEN environment variable must be set for acceptance tests")
 	}
+	// Skip acceptance tests if SEVALLA_COMPANY_ID is not set
+	if os.Getenv("SEVALLA_COMPANY_ID") == "" {
+		t.Skip("SEVALLA_COMPANY_ID environment variable must be set for acceptance tests")
+	}
+}
+
+// testAccCompanyID returns the company ID from environment variables for testing
+func testAccCompanyID() string {
+	return os.Getenv("SEVALLA_COMPANY_ID")
 }

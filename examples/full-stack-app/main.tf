@@ -52,11 +52,7 @@ resource "sevalla_application" "api" {
   name        = "${var.app_name}-api"
   description = "Backend API for ${var.app_name}"
 
-  repository {
-    url    = var.api_repo_url
-    type   = "github"
-    branch = var.api_branch
-  }
+  repository = var.api_repo_url
 
   branch        = var.api_branch
   build_command = "npm ci && npm run build"
@@ -98,11 +94,7 @@ resource "sevalla_application" "api" {
 resource "sevalla_static_site" "frontend" {
   name = "${var.app_name}-frontend"
 
-  repository {
-    url    = var.frontend_repo_url
-    type   = "github"
-    branch = var.frontend_branch
-  }
+  repository = var.frontend_repo_url
 
   branch    = var.frontend_branch
   build_dir = "dist"

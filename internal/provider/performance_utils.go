@@ -180,8 +180,6 @@ func (bp *BatchProcessor) executeBatch(batch []*BatchOperation) {
 			bp.executeGetDatabaseBatch(ops)
 		case "get_static_site":
 			bp.executeGetStaticSiteBatch(ops)
-		case "get_object_storage":
-			bp.executeGetObjectStorageBatch(ops)
 		case "get_pipeline":
 			bp.executeGetPipelineBatch(ops)
 		default:
@@ -212,14 +210,6 @@ func (bp *BatchProcessor) executeGetDatabaseBatch(ops []*BatchOperation) {
 
 // executeGetStaticSiteBatch executes a batch of get static site operations.
 func (bp *BatchProcessor) executeGetStaticSiteBatch(ops []*BatchOperation) {
-	// In a real implementation, this would make a batch API call
-	for _, op := range ops {
-		bp.executeIndividualOperation(op)
-	}
-}
-
-// executeGetObjectStorageBatch executes a batch of get object storage operations.
-func (bp *BatchProcessor) executeGetObjectStorageBatch(ops []*BatchOperation) {
 	// In a real implementation, this would make a batch API call
 	for _, op := range ops {
 		bp.executeIndividualOperation(op)
@@ -401,36 +391,6 @@ func (poc *PerformanceOptimizedClient) GetStaticSiteCached(ctx context.Context, 
 	poc.cache.Set(cacheKey, site, 5*time.Minute)
 
 	return site, nil
-}
-
-// GetObjectStorageCached gets object storage with caching.
-func (poc *PerformanceOptimizedClient) GetObjectStorageCached(ctx context.Context, id string) (*sevallaapi.ObjectStorage, error) {
-	cacheKey := "object_storage:" + id
-
-	// Check cache first
-	if cached, found := poc.cache.Get(cacheKey); found {
-		tflog.Debug(ctx, "Object storage retrieved from cache", map[string]interface{}{"id": id})
-		if storage, ok := cached.(*sevallaapi.ObjectStorage); ok {
-			return storage, nil
-		}
-	}
-
-	// Wait for rate limiter
-	if err := poc.rateLimiter.Wait(ctx); err != nil {
-		return nil, err
-	}
-
-	// Make API call
-	tflog.Debug(ctx, "Making API call for object storage", map[string]interface{}{"id": id})
-	storage, err := sevallaapi.NewObjectStorageService(poc.client).Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Cache the result
-	poc.cache.Set(cacheKey, storage, 5*time.Minute)
-
-	return storage, nil
 }
 
 // GetPipelineCached gets a pipeline with caching.

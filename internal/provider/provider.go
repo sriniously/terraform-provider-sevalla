@@ -51,7 +51,7 @@ func (p *SevallaProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Sensitive:           true,
 			},
 			"base_url": schema.StringAttribute{
-				MarkdownDescription: "The base URL for the Sevalla API. Defaults to `https://api.sevalla.com`.",
+				MarkdownDescription: "The base URL for the Sevalla API. Can also be set via the `SEVALLA_BASE_URL` environment variable. Defaults to `https://api.sevalla.com`.",
 				Optional:            true,
 			},
 		},
@@ -74,6 +74,11 @@ func (p *SevallaProvider) Configure(
 	// Default values
 	token := os.Getenv("SEVALLA_TOKEN")
 	baseURL := sevallaapi.DefaultBaseURL
+
+	// Check for base URL from environment
+	if envBaseURL := os.Getenv("SEVALLA_BASE_URL"); envBaseURL != "" {
+		baseURL = envBaseURL
+	}
 
 	if !data.Token.IsNull() {
 		token = data.Token.ValueString()
@@ -105,12 +110,12 @@ func (p *SevallaProvider) Configure(
 		BaseURL: baseURL,
 	})
 
-	data_source_data := SevallaProviderData{
+	providerData := SevallaProviderData{
 		Client: client,
 	}
 
-	resp.DataSourceData = data_source_data
-	resp.ResourceData = data_source_data
+	resp.DataSourceData = providerData
+	resp.ResourceData = providerData
 
 	tflog.Info(ctx, "Configured Sevalla client", map[string]any{"success": true})
 }
@@ -120,7 +125,7 @@ func (p *SevallaProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewApplicationResource,
 		NewDatabaseResource,
 		NewStaticSiteResource,
-		NewObjectStorageResource,
+		NewSiteResource,
 		NewPipelineResource,
 	}
 }
@@ -130,7 +135,8 @@ func (p *SevallaProvider) DataSources(ctx context.Context) []func() datasource.D
 		NewApplicationDataSource,
 		NewDatabaseDataSource,
 		NewStaticSiteDataSource,
-		NewObjectStorageDataSource,
+		NewSiteDataSource,
+		NewCompanyUsersDataSource,
 		NewPipelineDataSource,
 	}
 }

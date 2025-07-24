@@ -4,18 +4,23 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sriniously/terraform-provider-sevalla/internal/sevallaapi"
 )
 
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &ApplicationResource{}
 var _ resource.ResourceWithImportState = &ApplicationResource{}
 
@@ -23,152 +28,303 @@ func NewApplicationResource() resource.Resource {
 	return &ApplicationResource{}
 }
 
+// ApplicationResource defines the resource implementation.
 type ApplicationResource struct {
 	client *sevallaapi.Client
 }
 
+// EnvironmentVariableModel represents an environment variable.
+type EnvironmentVariableModel struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+// DeploymentModel represents a deployment.
+type DeploymentModel struct {
+	ID            types.String `tfsdk:"id"`
+	Status        types.String `tfsdk:"status"`
+	Branch        types.String `tfsdk:"branch"`
+	RepoURL       types.String `tfsdk:"repo_url"`
+	CommitHash    types.String `tfsdk:"commit_hash"`
+	CommitMessage types.String `tfsdk:"commit_message"`
+	CreatedAt     types.Int64  `tfsdk:"created_at"`
+	UpdatedAt     types.Int64  `tfsdk:"updated_at"`
+	BuildLogs     types.String `tfsdk:"build_logs"`
+}
+
+// ProcessModel represents an application process.
+type ProcessModel struct {
+	ID               types.String `tfsdk:"id"`
+	Key              types.String `tfsdk:"key"`
+	Type             types.String `tfsdk:"type"`
+	DisplayName      types.String `tfsdk:"display_name"`
+	ResourceTypeName types.String `tfsdk:"resource_type_name"`
+	Entrypoint       types.String `tfsdk:"entrypoint"`
+}
+
+// InternalConnectionModel represents an internal connection.
+type InternalConnectionModel struct {
+	ID         types.String `tfsdk:"id"`
+	TargetType types.String `tfsdk:"target_type"`
+	TargetID   types.String `tfsdk:"target_id"`
+	CreatedAt  types.Int64  `tfsdk:"created_at"`
+}
+
+// ApplicationResourceModel describes the resource data model.
 type ApplicationResourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	Domain       types.String `tfsdk:"domain"`
-	Repository   types.Object `tfsdk:"repository"`
-	Branch       types.String `tfsdk:"branch"`
-	BuildCommand types.String `tfsdk:"build_command"`
-	StartCommand types.String `tfsdk:"start_command"`
-	Environment  types.Map    `tfsdk:"environment"`
-	Instances    types.Int64  `tfsdk:"instances"`
-	Memory       types.Int64  `tfsdk:"memory"`
-	CPU          types.Int64  `tfsdk:"cpu"`
-	Status       types.String `tfsdk:"status"`
-	CreatedAt    types.String `tfsdk:"created_at"`
-	UpdatedAt    types.String `tfsdk:"updated_at"`
+	ID                   types.String `tfsdk:"id"`
+	Name                 types.String `tfsdk:"name"`
+	DisplayName          types.String `tfsdk:"display_name"`
+	Status               types.String `tfsdk:"status"`
+	CompanyID            types.String `tfsdk:"company_id"`
+	RepoURL              types.String `tfsdk:"repo_url"`
+	DefaultBranch        types.String `tfsdk:"default_branch"`
+	AutoDeploy           types.Bool   `tfsdk:"auto_deploy"`
+	BuildPath            types.String `tfsdk:"build_path"`
+	BuildType            types.String `tfsdk:"build_type"`
+	NodeVersion          types.String `tfsdk:"node_version"`
+	DockerfilePath       types.String `tfsdk:"dockerfile_path"`
+	DockerComposeFile    types.String `tfsdk:"docker_compose_file"`
+	StartCommand         types.String `tfsdk:"start_command"`
+	InstallCommand       types.String `tfsdk:"install_command"`
+	EnvironmentVariables types.List   `tfsdk:"environment_variables"`
+	CreatedAt            types.Int64  `tfsdk:"created_at"`
+	UpdatedAt            types.Int64  `tfsdk:"updated_at"`
+	Deployments          types.List   `tfsdk:"deployments"`
+	Processes            types.List   `tfsdk:"processes"`
+	InternalConnections  types.List   `tfsdk:"internal_connections"`
 }
 
-type RepositoryModel struct {
-	URL    types.String `tfsdk:"url"`
-	Type   types.String `tfsdk:"type"`
-	Branch types.String `tfsdk:"branch"`
-}
-
-func (r *ApplicationResource) Metadata(
-	ctx context.Context,
-	req resource.MetadataRequest,
-	resp *resource.MetadataResponse,
-) {
+func (r *ApplicationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_application"
 }
 
 func (r *ApplicationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages a Sevalla application.",
+		MarkdownDescription: "Manages a Sevalla application with full configuration support including repository settings, build configuration, environment variables, and deployment management.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Application identifier",
+				MarkdownDescription: "The unique identifier of the application.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "Application name",
+				Computed:            true,
+				MarkdownDescription: "The unique name of the application.",
+			},
+			"display_name": schema.StringAttribute{
 				Required:            true,
+				MarkdownDescription: "The display name of the application.",
 			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "Application description",
-				Optional:            true,
+			"status": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The current status of the application (deploying, deployed, failed, stopped).",
 			},
-			"domain": schema.StringAttribute{
-				MarkdownDescription: "Custom domain for the application",
-				Optional:            true,
+			"company_id": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The company ID that owns this application.",
 			},
-			"repository": schema.SingleNestedAttribute{
-				MarkdownDescription: "Source code repository configuration",
+			"repo_url": schema.StringAttribute{
 				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						MarkdownDescription: "Repository URL",
-						Required:            true,
-					},
-					"type": schema.StringAttribute{
-						MarkdownDescription: "Repository type (github, gitlab, bitbucket)",
-						Required:            true,
-					},
-					"branch": schema.StringAttribute{
-						MarkdownDescription: "Repository branch",
-						Optional:            true,
+				MarkdownDescription: "The repository URL for the application.",
+			},
+			"default_branch": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("main"),
+				MarkdownDescription: "The default branch to deploy from.",
+			},
+			"auto_deploy": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether to automatically deploy on git push.",
+			},
+			"build_path": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The build path for the application.",
+			},
+			"build_type": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The build type (dockerfile, pack, nixpacks).",
+				Validators: []validator.String{
+					stringvalidator.OneOf("dockerfile", "pack", "nixpacks"),
+				},
+			},
+			"node_version": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The Node.js version to use (16.20.0, 18.16.0, 20.2.0).",
+				Validators: []validator.String{
+					stringvalidator.OneOf("16.20.0", "18.16.0", "20.2.0"),
+				},
+			},
+			"dockerfile_path": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The path to the Dockerfile.",
+			},
+			"docker_compose_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The path to the docker-compose file.",
+			},
+			"start_command": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The start command for the application.",
+			},
+			"install_command": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The install command for the application.",
+			},
+			"environment_variables": schema.ListNestedAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.ObjectType{AttrTypes: map[string]attr.Type{"key": types.StringType, "value": types.StringType}}, []attr.Value{})),
+				MarkdownDescription: "Environment variables for the application.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"key": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "The environment variable key.",
+						},
+						"value": schema.StringAttribute{
+							Required:            true,
+							Sensitive:           true,
+							MarkdownDescription: "The environment variable value.",
+						},
 					},
 				},
 			},
-			"branch": schema.StringAttribute{
-				MarkdownDescription: "Git branch to deploy",
-				Optional:            true,
-			},
-			"build_command": schema.StringAttribute{
-				MarkdownDescription: "Build command to run",
-				Optional:            true,
-			},
-			"start_command": schema.StringAttribute{
-				MarkdownDescription: "Start command to run",
-				Optional:            true,
-			},
-			"environment": schema.MapAttribute{
-				MarkdownDescription: "Environment variables",
-				ElementType:         types.StringType,
-				Optional:            true,
-			},
-			"instances": schema.Int64Attribute{
-				MarkdownDescription: "Number of instances",
-				Optional:            true,
-			},
-			"memory": schema.Int64Attribute{
-				MarkdownDescription: "Memory allocation in MB",
-				Optional:            true,
-			},
-			"cpu": schema.Int64Attribute{
-				MarkdownDescription: "CPU allocation in millicores",
-				Optional:            true,
-			},
-			"status": schema.StringAttribute{
-				MarkdownDescription: "Application status",
+			"created_at": schema.Int64Attribute{
 				Computed:            true,
+				MarkdownDescription: "The timestamp when the application was created.",
 			},
-			"created_at": schema.StringAttribute{
-				MarkdownDescription: "Creation timestamp",
+			"updated_at": schema.Int64Attribute{
 				Computed:            true,
+				MarkdownDescription: "The timestamp when the application was last updated.",
 			},
-			"updated_at": schema.StringAttribute{
-				MarkdownDescription: "Last update timestamp",
+			"deployments": schema.ListNestedAttribute{
 				Computed:            true,
+				MarkdownDescription: "List of deployments for this application.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The deployment ID.",
+						},
+						"status": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The deployment status.",
+						},
+						"branch": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The branch for this deployment.",
+						},
+						"repo_url": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The repository URL.",
+						},
+						"commit_hash": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The commit hash.",
+						},
+						"commit_message": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The commit message.",
+						},
+						"created_at": schema.Int64Attribute{
+							Computed:            true,
+							MarkdownDescription: "When the deployment was created.",
+						},
+						"updated_at": schema.Int64Attribute{
+							Computed:            true,
+							MarkdownDescription: "When the deployment was last updated.",
+						},
+						"build_logs": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The build logs.",
+						},
+					},
+				},
+			},
+			"processes": schema.ListNestedAttribute{
+				Computed:            true,
+				MarkdownDescription: "List of processes for this application.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The process ID.",
+						},
+						"key": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The process key.",
+						},
+						"type": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The process type.",
+						},
+						"display_name": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The process display name.",
+						},
+						"resource_type_name": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The resource type name.",
+						},
+						"entrypoint": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The process entrypoint.",
+						},
+					},
+				},
+			},
+			"internal_connections": schema.ListNestedAttribute{
+				Computed:            true,
+				MarkdownDescription: "List of internal connections for this application.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The connection ID.",
+						},
+						"target_type": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The target type (appResource, dbResource, envResource).",
+						},
+						"target_id": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The target resource ID.",
+						},
+						"created_at": schema.Int64Attribute{
+							Computed:            true,
+							MarkdownDescription: "When the connection was created.",
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-func (r *ApplicationResource) Configure(
-	ctx context.Context,
-	req resource.ConfigureRequest,
-	resp *resource.ConfigureResponse,
-) {
+func (r *ApplicationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(SevallaProviderData)
+	data, ok := req.ProviderData.(SevallaProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected SevallaProviderData, got: %T. "+
-				"Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected SevallaProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
 
-	r.client = client.Client
+	r.client = data.Client
 }
 
-//nolint:cyclop // terraform resource methods require handling multiple conditional fields
 func (r *ApplicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ApplicationResourceModel
 
@@ -177,72 +333,35 @@ func (r *ApplicationResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	// Convert Terraform model to API request
 	createReq := sevallaapi.CreateApplicationRequest{
-		Name:        data.Name.ValueString(),
-		Description: data.Description.ValueString(),
+		CompanyID:   data.CompanyID.ValueString(),
+		DisplayName: data.DisplayName.ValueString(),
 	}
 
-	if !data.Branch.IsNull() {
-		createReq.Branch = data.Branch.ValueString()
+	if !data.RepoURL.IsNull() {
+		createReq.RepoURL = data.RepoURL.ValueString()
 	}
 
-	if !data.BuildCommand.IsNull() {
-		createReq.BuildCommand = data.BuildCommand.ValueString()
+	if !data.DefaultBranch.IsNull() {
+		createReq.Branch = data.DefaultBranch.ValueString()
 	}
 
-	if !data.StartCommand.IsNull() {
-		createReq.StartCommand = data.StartCommand.ValueString()
-	}
+	tflog.Debug(ctx, "Creating application", map[string]interface{}{
+		"company_id":   createReq.CompanyID,
+		"display_name": createReq.DisplayName,
+		"repo_url":     createReq.RepoURL,
+	})
 
-	if !data.Environment.IsNull() {
-		env := make(map[string]string)
-		resp.Diagnostics.Append(data.Environment.ElementsAs(ctx, &env, false)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		createReq.Environment = env
-	}
-
-	if !data.Instances.IsNull() {
-		createReq.Instances = int(data.Instances.ValueInt64())
-	}
-
-	if !data.Memory.IsNull() {
-		createReq.Memory = int(data.Memory.ValueInt64())
-	}
-
-	if !data.CPU.IsNull() {
-		createReq.CPU = int(data.CPU.ValueInt64())
-	}
-
-	// Handle repository
-	if !data.Repository.IsNull() {
-		var repo RepositoryModel
-		resp.Diagnostics.Append(data.Repository.As(ctx, &repo, basetypes.ObjectAsOptions{})...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		createReq.Repository = &sevallaapi.Repository{
-			URL:    repo.URL.ValueString(),
-			Type:   repo.Type.ValueString(),
-			Branch: repo.Branch.ValueString(),
-		}
-	}
-
-	tflog.Trace(ctx, "creating application")
-
-	app, err := sevallaapi.NewApplicationService(r.client).Create(ctx, createReq)
+	app, err := r.client.Applications.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create application, got error: %s", err))
 		return
 	}
 
-	// Update the state with the created application
-	r.updateModelFromAPI(ctx, &data, app)
+	// Map all fields from API response
+	r.mapApplicationToModel(ctx, &data, &app.App)
 
-	tflog.Trace(ctx, "created application")
+	tflog.Trace(ctx, "Created application resource")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -255,18 +374,18 @@ func (r *ApplicationResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	app, err := sevallaapi.NewApplicationService(r.client).Get(ctx, data.ID.ValueString())
+	app, err := r.client.Applications.Get(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read application, got error: %s", err))
 		return
 	}
 
-	r.updateModelFromAPI(ctx, &data, app)
+	// Map all fields from API response
+	r.mapApplicationToModel(ctx, &data, &app.App)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-//nolint:cyclop // terraform resource methods require handling multiple conditional fields
 func (r *ApplicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data ApplicationResourceModel
 
@@ -275,80 +394,66 @@ func (r *ApplicationResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	// Convert Terraform model to API request
-	updateReq := sevallaapi.UpdateApplicationRequest{}
-
-	if !data.Name.IsNull() {
-		name := data.Name.ValueString()
-		updateReq.Name = &name
+	updateReq := sevallaapi.UpdateApplicationRequest{
+		DisplayName: stringPointer(data.DisplayName.ValueString()),
 	}
 
-	if !data.Description.IsNull() {
-		desc := data.Description.ValueString()
-		updateReq.Description = &desc
+	// Add all updatable fields
+	if !data.BuildPath.IsNull() {
+		updateReq.BuildPath = stringPointer(data.BuildPath.ValueString())
 	}
-
-	if !data.Branch.IsNull() {
-		branch := data.Branch.ValueString()
-		updateReq.Branch = &branch
+	if !data.BuildType.IsNull() {
+		buildType := sevallaapi.BuildType(data.BuildType.ValueString())
+		updateReq.BuildType = &buildType
 	}
-
-	if !data.BuildCommand.IsNull() {
-		buildCmd := data.BuildCommand.ValueString()
-		updateReq.BuildCommand = &buildCmd
+	if !data.DefaultBranch.IsNull() {
+		updateReq.DefaultBranch = stringPointer(data.DefaultBranch.ValueString())
 	}
-
+	if !data.AutoDeploy.IsNull() {
+		autoDeploy := data.AutoDeploy.ValueBool()
+		updateReq.AutoDeploy = &autoDeploy
+	}
+	if !data.NodeVersion.IsNull() {
+		nodeVersion := sevallaapi.NodeVersion(data.NodeVersion.ValueString())
+		updateReq.NodeVersion = &nodeVersion
+	}
+	if !data.DockerfilePath.IsNull() {
+		updateReq.DockerfilePath = stringPointer(data.DockerfilePath.ValueString())
+	}
+	if !data.DockerComposeFile.IsNull() {
+		updateReq.DockerComposeFile = stringPointer(data.DockerComposeFile.ValueString())
+	}
 	if !data.StartCommand.IsNull() {
-		startCmd := data.StartCommand.ValueString()
-		updateReq.StartCommand = &startCmd
+		updateReq.StartCommand = stringPointer(data.StartCommand.ValueString())
+	}
+	if !data.InstallCommand.IsNull() {
+		updateReq.InstallCommand = stringPointer(data.InstallCommand.ValueString())
 	}
 
-	if !data.Environment.IsNull() {
-		env := make(map[string]string)
-		resp.Diagnostics.Append(data.Environment.ElementsAs(ctx, &env, false)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		updateReq.Environment = &env
-	}
-
-	if !data.Instances.IsNull() {
-		instances := int(data.Instances.ValueInt64())
-		updateReq.Instances = &instances
-	}
-
-	if !data.Memory.IsNull() {
-		memory := int(data.Memory.ValueInt64())
-		updateReq.Memory = &memory
-	}
-
-	if !data.CPU.IsNull() {
-		cpu := int(data.CPU.ValueInt64())
-		updateReq.CPU = &cpu
-	}
-
-	// Handle repository
-	if !data.Repository.IsNull() {
-		var repo RepositoryModel
-		resp.Diagnostics.Append(data.Repository.As(ctx, &repo, basetypes.ObjectAsOptions{})...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		updateReq.Repository = &sevallaapi.Repository{
-			URL:    repo.URL.ValueString(),
-			Type:   repo.Type.ValueString(),
-			Branch: repo.Branch.ValueString(),
+	// Handle environment variables
+	if !data.EnvironmentVariables.IsNull() {
+		var envVarModels []EnvironmentVariableModel
+		diags := data.EnvironmentVariables.ElementsAs(ctx, &envVarModels, false)
+		if !diags.HasError() {
+			envVars := make([]sevallaapi.EnvVar, len(envVarModels))
+			for i, envVar := range envVarModels {
+				envVars[i] = sevallaapi.EnvVar{
+					Key:   envVar.Key.ValueString(),
+					Value: envVar.Value.ValueString(),
+				}
+			}
+			updateReq.EnvironmentVariables = envVars
 		}
 	}
 
-	app, err := sevallaapi.NewApplicationService(r.client).Update(ctx, data.ID.ValueString(), updateReq)
+	app, err := r.client.Applications.Update(ctx, data.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update application, got error: %s", err))
 		return
 	}
 
-	r.updateModelFromAPI(ctx, &data, app)
+	// Map all fields from API response
+	r.mapApplicationToModel(ctx, &data, &app.App)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -361,72 +466,169 @@ func (r *ApplicationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	err := sevallaapi.NewApplicationService(r.client).Delete(ctx, data.ID.ValueString())
+	err := r.client.Applications.Delete(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete application, got error: %s", err))
 		return
 	}
 }
 
-func (r *ApplicationResource) ImportState(
-	ctx context.Context,
-	req resource.ImportStateRequest,
-	resp *resource.ImportStateResponse,
-) {
+func (r *ApplicationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *ApplicationResource) updateModelFromAPI(
-	_ context.Context,
-	data *ApplicationResourceModel,
-	app *sevallaapi.Application,
-) {
+// mapApplicationToModel maps API response to Terraform model
+func (r *ApplicationResource) mapApplicationToModel(ctx context.Context, data *ApplicationResourceModel, app *sevallaapi.ApplicationDetails) {
 	data.ID = types.StringValue(app.ID)
 	data.Name = types.StringValue(app.Name)
-	data.Description = types.StringValue(app.Description)
-	data.Domain = types.StringValue(app.Domain)
-	data.Branch = types.StringValue(app.Branch)
-	data.BuildCommand = types.StringValue(app.BuildCommand)
-	data.StartCommand = types.StringValue(app.StartCommand)
+	data.DisplayName = types.StringValue(app.DisplayName)
 	data.Status = types.StringValue(app.Status)
-	data.CreatedAt = types.StringValue(app.CreatedAt.Format("2006-01-02T15:04:05Z"))
-	data.UpdatedAt = types.StringValue(app.UpdatedAt.Format("2006-01-02T15:04:05Z"))
+	data.CompanyID = types.StringValue(app.CompanyID)
+	data.CreatedAt = types.Int64Value(app.CreatedAt)
+	data.UpdatedAt = types.Int64Value(app.UpdatedAt)
 
-	if app.Environment != nil {
-		envMap := make(map[string]attr.Value)
-		for k, v := range app.Environment {
-			envMap[k] = types.StringValue(v)
-		}
-		envValue, _ := types.MapValue(types.StringType, envMap)
-		data.Environment = envValue
-	}
+	// Repository fields
+	data.RepoURL = types.StringValue(app.RepoURL)
+	data.DefaultBranch = types.StringValue(app.DefaultBranch)
+	data.AutoDeploy = types.BoolValue(app.AutoDeploy)
 
-	if app.Instances > 0 {
-		data.Instances = types.Int64Value(int64(app.Instances))
-	}
+	// Build configuration
+	data.BuildPath = types.StringValue(app.BuildPath)
+	data.BuildType = types.StringValue(app.BuildType)
+	data.NodeVersion = types.StringValue(app.NodeVersion)
+	data.DockerfilePath = types.StringValue(app.DockerfilePath)
+	data.DockerComposeFile = types.StringValue(app.DockerComposeFile)
+	data.StartCommand = types.StringValue(app.StartCommand)
+	data.InstallCommand = types.StringValue(app.InstallCommand)
 
-	if app.Memory > 0 {
-		data.Memory = types.Int64Value(int64(app.Memory))
-	}
-
-	if app.CPU > 0 {
-		data.CPU = types.Int64Value(int64(app.CPU))
-	}
-
-	if app.Repository != nil {
-		repoObj := map[string]attr.Value{
-			"url":    types.StringValue(app.Repository.URL),
-			"type":   types.StringValue(app.Repository.Type),
-			"branch": types.StringValue(app.Repository.Branch),
-		}
-		objValue, _ := types.ObjectValue(
+	// Convert environment variables
+	envVars := make([]attr.Value, len(app.EnvironmentVariables))
+	for i, envVar := range app.EnvironmentVariables {
+		envVarObj, _ := types.ObjectValue(
 			map[string]attr.Type{
-				"url":    types.StringType,
-				"type":   types.StringType,
-				"branch": types.StringType,
+				"key":   types.StringType,
+				"value": types.StringType,
 			},
-			repoObj,
+			map[string]attr.Value{
+				"key":   types.StringValue(envVar.Key),
+				"value": types.StringValue(envVar.Value),
+			},
 		)
-		data.Repository = objValue
+		envVars[i] = envVarObj
 	}
+	data.EnvironmentVariables, _ = types.ListValue(
+		types.ObjectType{AttrTypes: map[string]attr.Type{"key": types.StringType, "value": types.StringType}},
+		envVars,
+	)
+
+	// Convert deployments
+	deployments := make([]attr.Value, len(app.Deployments))
+	for i, deployment := range app.Deployments {
+		commitMsg := ""
+		if deployment.CommitMessage != nil {
+			commitMsg = *deployment.CommitMessage
+		}
+		deploymentObj, _ := types.ObjectValue(
+			map[string]attr.Type{
+				"id":             types.StringType,
+				"status":         types.StringType,
+				"branch":         types.StringType,
+				"repo_url":       types.StringType,
+				"commit_hash":    types.StringType,
+				"commit_message": types.StringType,
+				"created_at":     types.Int64Type,
+				"updated_at":     types.Int64Type,
+				"build_logs":     types.StringType,
+			},
+			map[string]attr.Value{
+				"id":             types.StringValue(deployment.ID),
+				"status":         types.StringValue(deployment.Status),
+				"branch":         types.StringValue(deployment.Branch),
+				"repo_url":       types.StringValue(deployment.RepoURL),
+				"commit_hash":    types.StringValue(deployment.CommitHash),
+				"commit_message": types.StringValue(commitMsg),
+				"created_at":     types.Int64Value(deployment.CreatedAt),
+				"updated_at":     types.Int64Value(deployment.UpdatedAt),
+				"build_logs":     types.StringValue(deployment.BuildLogs),
+			},
+		)
+		deployments[i] = deploymentObj
+	}
+	deploymentAttrTypes := map[string]attr.Type{
+		"id":             types.StringType,
+		"status":         types.StringType,
+		"branch":         types.StringType,
+		"repo_url":       types.StringType,
+		"commit_hash":    types.StringType,
+		"commit_message": types.StringType,
+		"created_at":     types.Int64Type,
+		"updated_at":     types.Int64Type,
+		"build_logs":     types.StringType,
+	}
+	data.Deployments, _ = types.ListValue(types.ObjectType{AttrTypes: deploymentAttrTypes}, deployments)
+
+	// Convert processes
+	processes := make([]attr.Value, len(app.Processes))
+	for i, process := range app.Processes {
+		processObj, _ := types.ObjectValue(
+			map[string]attr.Type{
+				"id":                 types.StringType,
+				"key":                types.StringType,
+				"type":               types.StringType,
+				"display_name":       types.StringType,
+				"resource_type_name": types.StringType,
+				"entrypoint":         types.StringType,
+			},
+			map[string]attr.Value{
+				"id":                 types.StringValue(process.ID),
+				"key":                types.StringValue(process.Key),
+				"type":               types.StringValue(process.Type),
+				"display_name":       types.StringValue(process.DisplayName),
+				"resource_type_name": types.StringValue(process.ResourceTypeName),
+				"entrypoint":         types.StringValue(process.Entrypoint),
+			},
+		)
+		processes[i] = processObj
+	}
+	processAttrTypes := map[string]attr.Type{
+		"id":                 types.StringType,
+		"key":                types.StringType,
+		"type":               types.StringType,
+		"display_name":       types.StringType,
+		"resource_type_name": types.StringType,
+		"entrypoint":         types.StringType,
+	}
+	data.Processes, _ = types.ListValue(types.ObjectType{AttrTypes: processAttrTypes}, processes)
+
+	// Convert internal connections
+	connections := make([]attr.Value, len(app.InternalConnections))
+	for i, conn := range app.InternalConnections {
+		connObj, _ := types.ObjectValue(
+			map[string]attr.Type{
+				"id":          types.StringType,
+				"target_type": types.StringType,
+				"target_id":   types.StringType,
+				"created_at":  types.Int64Type,
+			},
+			map[string]attr.Value{
+				"id":          types.StringValue(conn.ID),
+				"target_type": types.StringValue(conn.TargetType),
+				"target_id":   types.StringValue(conn.TargetID),
+				"created_at":  types.Int64Value(conn.CreatedAt),
+			},
+		)
+		connections[i] = connObj
+	}
+	connAttrTypes := map[string]attr.Type{
+		"id":          types.StringType,
+		"target_type": types.StringType,
+		"target_id":   types.StringType,
+		"created_at":  types.Int64Type,
+	}
+	data.InternalConnections, _ = types.ListValue(types.ObjectType{AttrTypes: connAttrTypes}, connections)
+}
+
+// Helper function to convert string to pointer.
+func stringPointer(s string) *string {
+	return &s
 }

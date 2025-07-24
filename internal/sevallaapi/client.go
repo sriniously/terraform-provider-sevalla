@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultBaseURL = "https://api.sevalla.com"
+	DefaultBaseURL = "https://api.sevalla.com/v2"
 	DefaultTimeout = 30 * time.Second
 )
 
@@ -22,6 +22,16 @@ type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	Token      string
+
+	// Services
+	Applications *ApplicationService
+	Databases    *DatabaseService
+	StaticSites  *StaticSiteService
+	Sites        *SiteService
+	Pipelines    *PipelineService
+	Deployments  *DeploymentService
+	Company      *CompanyService
+	Operations   *OperationService
 }
 
 type Config struct {
@@ -39,13 +49,25 @@ func NewClient(config Config) *Client {
 		config.Timeout = DefaultTimeout
 	}
 
-	return &Client{
+	client := &Client{
 		BaseURL: config.BaseURL,
 		HTTPClient: &http.Client{
 			Timeout: config.Timeout,
 		},
 		Token: config.Token,
 	}
+
+	// Initialize services
+	client.Applications = NewApplicationService(client)
+	client.Databases = NewDatabaseService(client)
+	client.StaticSites = NewStaticSiteService(client)
+	client.Sites = NewSiteService(client)
+	client.Pipelines = NewPipelineService(client)
+	client.Deployments = NewDeploymentService(client)
+	client.Company = NewCompanyService(client)
+	client.Operations = NewOperationService(client)
+
+	return client
 }
 
 func (c *Client) makeRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
@@ -166,4 +188,21 @@ func (c *Client) handleError(resp *http.Response) error {
 	}
 
 	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+}
+
+// Pipeline convenience methods.
+func (c *Client) GetPipeline(ctx context.Context, id string) (*Pipeline, error) {
+	return c.Pipelines.Get(ctx, id)
+}
+
+func (c *Client) CreatePipeline(ctx context.Context, req CreatePipelineRequest) (*Pipeline, error) {
+	return c.Pipelines.Create(ctx, req)
+}
+
+func (c *Client) UpdatePipeline(ctx context.Context, id string, req UpdatePipelineRequest) (*Pipeline, error) {
+	return c.Pipelines.Update(ctx, id, req)
+}
+
+func (c *Client) DeletePipeline(ctx context.Context, id string) error {
+	return c.Pipelines.Delete(ctx, id)
 }
