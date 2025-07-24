@@ -1,28 +1,10 @@
-# Visit https://golangci-lint.run/ for usage documentation
-# and information on other useful linters
 version: "2"
-
-run:
-  timeout: 5m
-  go: "1.24"
-
-output:
-  formats:
-    text:
-      print-issued-lines: true
-      print-linter-name: true
-      colors: true
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
 linters:
   default: none
   enable:
+  - copyloopvar
   - durationcheck
   - errcheck
-  - copyloopvar
   - forcetypeassert
   - godot
   - ineffassign
@@ -34,33 +16,27 @@ linters:
   - unconvert
   - unparam
   - unused
-  - govet
-  - cyclop
-  - dupl
-
-  settings:
-    gocritic:
-      disabled-checks:
-      - hugeParam
-    cyclop:
-      max-complexity: 20
-    dupl:
-      threshold: 150
-    godot:
-      exclude:
-      - "^// Test.*"
-      - "^// testAcc.*"
-
+  - usetesting
   exclusions:
-    rules:
-    - path: _test\.go
-      linters:
-      - forcetypeassert
-      - goconst
-      - mnd
-      - lll
-      - noctx
-      - gocritic
-      - godot
-      - unused
-      - cyclop
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+    paths:
+    - third_party$
+    - builtin$
+    - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+  - gofmt
+  exclusions:
+    generated: lax
+    paths:
+    - third_party$
+    - builtin$
+    - examples$
